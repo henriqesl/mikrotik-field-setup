@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Scripts MikroTik</title>
+    <!-- Tailwind CSS para estilização -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Estilos personalizados para o Toast (Notificação) e Scrollbar */
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #10b981;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s, visibility 0.3s;
+        }
+        .toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 50px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-slate-800 w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
+        
+        <!-- Coluna da Esquerda: Formulário -->
+        <div class="w-full md:w-1/2 p-6 lg:p-8 bg-slate-800 border-b md:border-b-0 md:border-r border-slate-700 overflow-y-auto" style="max-height: 90vh;">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="bg-blue-500 p-3 rounded-lg">
+                    <i class="fa-solid fa-network-wired text-white text-xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-white">Setup MikroTik</h1>
+            </div>
+
+            <p class="text-slate-400 text-sm mb-6">Preencha os dados abaixo. O script será gerado automaticamente para colar no terminal.</p>
+
+            <form id="configForm" class="space-y-4">
+                <!-- Modo de Operação -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Modo de Operação</label>
+                    <div class="flex bg-slate-900 rounded-lg p-1">
+                        <button type="button" id="btnModeAP" class="flex-1 py-2 text-sm font-semibold rounded-md transition-colors bg-blue-600 text-white shadow" onclick="setMode('AP')">
+                            <i class="fa-solid fa-wifi mr-2"></i> AP (Torre)
+                        </button>
+                        <button type="button" id="btnModeStation" class="flex-1 py-2 text-sm font-semibold rounded-md transition-colors text-slate-400 hover:text-white" onclick="setMode('Station')">
+                            <i class="fa-solid fa-satellite-dish mr-2"></i> Station (Cliente)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Pacote do Sistema -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Pacote RouterOS</label>
+                    <div class="flex bg-slate-900 rounded-lg p-1">
+                        <button type="button" id="btnPkgWireless" class="flex-1 py-2 text-sm font-semibold rounded-md transition-colors bg-blue-600 text-white shadow" onclick="setPackage('wireless')">
+                            <i class="fa-solid fa-signal mr-2"></i> Legacy (wireless)
+                        </button>
+                        <button type="button" id="btnPkgWifi" class="flex-1 py-2 text-sm font-semibold rounded-md transition-colors text-slate-400 hover:text-white" onclick="setPackage('wifi')">
+                            <i class="fa-solid fa-wifi mr-2"></i> Novo v7 (wifi)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SSID e Senha -->
+                <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">SSID (Nome da Rede)</label>
+                        <input type="text" id="ssid" value="Link_Provedor" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Senha Wireless</label>
+                        <input type="text" id="senha" value="Seguranca123" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+                    </div>
+                </div>
+
+                <!-- Frequência (Apenas AP) -->
+                <div id="freqContainer" class="transition-all duration-300">
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Frequência (MHz) - <span class="text-xs text-slate-500">Apenas AP</span></label>
+                    <input type="number" id="frequencia" value="5500" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+                </div>
+
+                <!-- Redes (IP e Gateway) -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">IP do Rádio com CIDR</label>
+                        <input type="text" id="ip" value="192.168.88.2/24" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Gateway</label>
+                        <input type="text" id="gateway" value="192.168.88.1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="w-full md:w-1/2 flex flex-col bg-slate-900 relative" style="max-height: 90vh;">
+            <div class="flex items-center justify-between p-4 bg-slate-800/50 border-b border-slate-800">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-terminal text-slate-400"></i>
+                    <span class="font-mono text-sm text-slate-300">Terminal Output</span>
+                </div>
+                <button onclick="copyScript()" class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium py-1.5 px-4 rounded-md transition-colors flex items-center gap-2 shadow-lg">
+                    <i class="fa-regular fa-copy"></i> Copiar Script
+                </button>
+            </div>
+            
+            <div class="flex-1 p-4 overflow-hidden flex flex-col">
+                <textarea id="scriptOutput" readonly class="w-full h-full bg-transparent text-green-400 font-mono text-sm resize-none focus:outline-none whitespace-pre overflow-y-auto" spellcheck="false"></textarea>
+            </div>
+            
+            <div class="p-3 bg-slate-800/80 border-t border-slate-800 text-xs text-slate-400">
+                <i class="fa-solid fa-circle-info text-blue-400 mr-1"></i> 
+                <strong>Dica:</strong> Cole isso no "New Terminal" do Winbox. O rádio não deve ter configurações padrão ativas.
+            </div>
+        </div>
+    </div>
+
+    <!-- Elemento Toast para mensagem de cópia -->
+    <div id="toast" class="toast font-medium shadow-xl">
+        <i class="fa-solid fa-check-circle mr-2"></i> Script copiado com sucesso!
+    </div>
+
+    <script>
+        // Estado inicial
+        let currentMode = 'AP';
+        let currentPackage = 'wireless';
+
+        // Elementos do DOM
+        const formInputs = document.querySelectorAll('input');
+        const scriptOutput = document.getElementById('scriptOutput');
+        const freqContainer = document.getElementById('freqContainer');
+        const btnModeAP = document.getElementById('btnModeAP');
+        const btnModeStation = document.getElementById('btnModeStation');
+        const btnPkgWireless = document.getElementById('btnPkgWireless');
+        const btnPkgWifi = document.getElementById('btnPkgWifi');
+        const toast = document.getElementById('toast');
+
+        // Função para alterar o pacote (wireless / wifi)
+        function setPackage(pkg) {
+            currentPackage = pkg;
+            
+            if (pkg === 'wireless') {
+                btnPkgWireless.classList.replace('text-slate-400', 'text-white');
+                btnPkgWireless.classList.replace('hover:text-white', 'shadow');
+                btnPkgWireless.classList.add('bg-blue-600');
+                
+                btnPkgWifi.classList.replace('text-white', 'text-slate-400');
+                btnPkgWifi.classList.replace('shadow', 'hover:text-white');
+                btnPkgWifi.classList.remove('bg-blue-600');
+            } else {
+                btnPkgWifi.classList.replace('text-slate-400', 'text-white');
+                btnPkgWifi.classList.replace('hover:text-white', 'shadow');
+                btnPkgWifi.classList.add('bg-blue-600');
+                
+                btnPkgWireless.classList.replace('text-white', 'text-slate-400');
+                btnPkgWireless.classList.replace('shadow', 'hover:text-white');
+                btnPkgWireless.classList.remove('bg-blue-600');
+            }
+            generateScript();
+        }
+
+        // Função para alterar o modo (AP / Station)
+        function setMode(mode) {
+            currentMode = mode;
+            
+            // Atualizar botões visuais
+            if (mode === 'AP') {
+                btnModeAP.classList.replace('text-slate-400', 'text-white');
+                btnModeAP.classList.replace('hover:text-white', 'shadow');
+                btnModeAP.classList.add('bg-blue-600');
+                
+                btnModeStation.classList.replace('text-white', 'text-slate-400');
+                btnModeStation.classList.replace('shadow', 'hover:text-white');
+                btnModeStation.classList.remove('bg-blue-600');
+                
+                freqContainer.style.opacity = '1';
+                freqContainer.style.pointerEvents = 'auto';
+            } else {
+                btnModeStation.classList.replace('text-slate-400', 'text-white');
+                btnModeStation.classList.replace('hover:text-white', 'shadow');
+                btnModeStation.classList.add('bg-blue-600');
+                
+                btnModeAP.classList.replace('text-white', 'text-slate-400');
+                btnModeAP.classList.replace('shadow', 'hover:text-white');
+                btnModeAP.classList.remove('bg-blue-600');
+                
+                freqContainer.style.opacity = '0.3';
+                freqContainer.style.pointerEvents = 'none';
+            }
+            
+            generateScript();
+        }
+
+        // Função principal para gerar o script RouterOS
+        function generateScript() {
+            const ssid = document.getElementById('ssid').value || 'Link_Provedor';
+            const senha = document.getElementById('senha').value || 'Seguranca123';
+            const freq = document.getElementById('frequencia').value || '5500';
+            const ip = document.getElementById('ip').value || '192.168.88.2/24';
+            const gateway = document.getElementById('gateway').value || '192.168.88.1';
+
+            let script = "";
+            script += `# ==================================================\n`;
+            script += `# SETUP MIKROTIK - MODO: ${currentMode.toUpperCase()}\n`;
+            script += `# Aplicacao: Bridge Transparente\n`;
+            script += `# Pacote: ${currentPackage.toUpperCase()}\n`;
+            script += `# ==================================================\n\n`;
+
+            const wlanInterface = currentPackage === 'wifi' ? 'wifi1' : 'wlan1';
+
+            script += `# 1. Limpando enderecos IP existentes (Evitar conflitos)\n`;
+            script += `:do { /ip address remove [find interface=bridge-lan] } on-error={}\n`;
+            script += `:do { /ip address remove [find interface=${wlanInterface}] } on-error={}\n`;
+            script += `:do { /ip address remove [find interface=ether1] } on-error={}\n\n`;
+
+            script += `# 2. Criando Bridge Local\n`;
+            script += `:do { /interface bridge add name=bridge-lan comment="Bridge Local LAN" } on-error={}\n`;
+            script += `:do { /interface bridge port add bridge=bridge-lan interface=ether1 } on-error={}\n`;
+            script += `:do { /interface bridge port add bridge=bridge-lan interface=${wlanInterface} } on-error={}\n\n`;
+
+            script += `# 3. Configurando Perfil de Seguranca Wireless\n`;
+            if (currentPackage === 'wireless') {
+                script += `:do { /interface wireless security-profiles remove [find name=perfil_seguranca] } on-error={}\n`;
+                script += `/interface wireless security-profiles add name=perfil_seguranca mode=dynamic-keys authentication-types=wpa2-psk unicast-ciphers=aes-ccm group-ciphers=aes-ccm wpa2-pre-shared-key="${senha}"\n\n`;
+            } else {
+                script += `:do { /interface wifi security remove [find name=perfil_seguranca] } on-error={}\n`;
+                script += `/interface wifi security add name=perfil_seguranca authentication-types=wpa2-psk passphrase="${senha}"\n\n`;
+            }
+
+            script += `# 4. Configurando Interface Wireless\n`;
+            if (currentPackage === 'wireless') {
+                if (currentMode === 'AP') {
+                    script += `/interface wireless set [find default-name=wlan1] \\\n`;
+                    script += `    mode=bridge \\\n`;
+                    script += `    ssid="${ssid}" \\\n`;
+                    script += `    frequency=${freq} \\\n`;
+                    script += `    band=5ghz-a/n/ac \\\n`;
+                    script += `    country=brazil \\\n`;
+                    script += `    wireless-protocol=802.11 \\\n`;
+                    script += `    security-profile=perfil_seguranca \\\n`;
+                    script += `    disabled=no\n\n`;
+                } else {
+                    script += `/interface wireless set [find default-name=wlan1] \\\n`;
+                    script += `    mode=station-bridge \\\n`;
+                    script += `    ssid="${ssid}" \\\n`;
+                    script += `    band=5ghz-a/n/ac \\\n`;
+                    script += `    country=brazil \\\n`;
+                    script += `    wireless-protocol=802.11 \\\n`;
+                    script += `    security-profile=perfil_seguranca \\\n`;
+                    script += `    disabled=no\n\n`;
+                }
+            } else {
+                if (currentMode === 'AP') {
+                    script += `/interface wifi set [find default-name=wifi1] \\\n`;
+                    script += `    configuration.mode=ap \\\n`;
+                    script += `    configuration.country=Brazil \\\n`;
+                    script += `    configuration.ssid="${ssid}" \\\n`;
+                    script += `    channel.frequency=${freq} \\\n`;
+                    script += `    security=perfil_seguranca \\\n`;
+                    script += `    disabled=no\n\n`;
+                } else {
+                    script += `/interface wifi set [find default-name=wifi1] \\\n`;
+                    script += `    configuration.mode=station-bridge \\\n`;
+                    script += `    configuration.country=Brazil \\\n`;
+                    script += `    configuration.ssid="${ssid}" \\\n`;
+                    script += `    security=perfil_seguranca \\\n`;
+                    script += `    disabled=no\n\n`;
+                }
+            }
+
+            script += `# 5. Configurando Rede e Roteamento\n`;
+            script += `/ip address add address=${ip} interface=bridge-lan\n`;
+            script += `/ip route add gateway=${gateway}\n\n`;
+            
+            script += `# ==================================================\n`;
+            script += `# CONFIGURACAO CONCLUIDA!\n`;
+            script += `# ==================================================\n`;
+
+            scriptOutput.value = script;
+        }
+
+        // Função para copiar o script para a área de transferência
+        function copyScript() {
+            scriptOutput.select();
+            scriptOutput.setSelectionRange(0, 99999); // Para mobile
+            
+            try {
+                // Tenta usar a API moderna primeiro, faz fallback para execCommand se falhar (útil em iFrames/WebViews antigas)
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(scriptOutput.value).then(showToast);
+                } else {
+                    document.execCommand("copy");
+                    showToast();
+                }
+            } catch (err) {
+                console.error('Erro ao copiar: ', err);
+                // Fallback de segurança 
+                document.execCommand("copy");
+                showToast();
+            }
+            
+            // Remove a seleção
+            window.getSelection().removeAllRanges();
+        }
+
+        // Função para exibir notificação na tela
+        function showToast() {
+            toast.className = "toast show";
+            setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+        }
+
+        // Adicionar Listeners em todos os inputs para atualizar em tempo real
+        formInputs.forEach(input => {
+            input.addEventListener('input', generateScript);
+        });
+
+        // Gerar script no carregamento inicial
+        window.onload = generateScript;
+    </script>
+</body>
+</html>
