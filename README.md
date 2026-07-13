@@ -31,7 +31,7 @@ Configuring MikroTik radios manually through the CLI is slow and prone to mistak
 
 # Usage
 
-1. Download and open `gerador-mikrotik.html` in any modern browser (offline supported).
+1. Download and open `mikrotik-generator.html` in any modern browser (offline supported).
 2. Select the operation mode (**Access Point** or **Station**).
 3. Fill in the network details (**SSID, Password, IP, Gateway**).
 4. Click **Copy Script**.
