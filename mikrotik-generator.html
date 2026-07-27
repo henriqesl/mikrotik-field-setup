@@ -26,28 +26,35 @@
 </head>
 <body class="min-h-screen p-4 lg:p-6">
     <main class="mx-auto max-w-7xl">
-        <header class="mb-5 flex flex-col gap-4 rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-2xl md:flex-row md:items-center md:justify-between">
+        <header class="mb-4 rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-2xl">
             <div class="flex items-center gap-3">
                 <div class="rounded-xl bg-blue-600 p-3">
                     <i class="fa-solid fa-router text-xl text-white"></i>
                 </div>
                 <div>
                     <h1 class="text-2xl font-bold">MikroTik Field Setup</h1>
-                    <p class="text-sm text-slate-400">Gerador de configurações para aplicação em campo</p>
+                    <p class="text-sm text-slate-400">Escolha abaixo o tipo de configuração que deseja gerar</p>
                 </div>
             </div>
-
-            <nav class="flex rounded-xl bg-slate-900 p-1" aria-label="Geradores">
-                <button id="tabWireless" type="button" onclick="setSection('wireless')"
-                    class="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow transition md:flex-none">
-                    <i class="fa-solid fa-tower-broadcast mr-2"></i>Enlace
-                </button>
-                <button id="tabNetwork" type="button" onclick="setSection('network')"
-                    class="flex-1 rounded-lg px-4 py-2 text-sm font-semibold text-slate-400 transition hover:text-white md:flex-none">
-                    <i class="fa-solid fa-network-wired mr-2"></i>Rede básica
-                </button>
-            </nav>
         </header>
+
+        <nav class="mb-5 grid gap-3 sm:grid-cols-3" aria-label="Geradores">
+            <button id="tabWireless" type="button" onclick="setSection('wireless')"
+                class="section-tab rounded-2xl border-2 border-blue-500 bg-blue-600 p-4 text-left text-white shadow-xl transition hover:-translate-y-0.5">
+                <span class="mb-2 flex items-center gap-3 text-lg font-bold"><i class="fa-solid fa-tower-broadcast"></i>Enlace</span>
+                <span class="block text-sm text-blue-100">AP ou Station em bridge transparente.</span>
+            </button>
+            <button id="tabNetwork" type="button" onclick="setSection('network')"
+                class="section-tab rounded-2xl border-2 border-slate-700 bg-slate-800 p-4 text-left text-slate-300 shadow-xl transition hover:-translate-y-0.5 hover:border-slate-500">
+                <span class="mb-2 flex items-center gap-3 text-lg font-bold"><i class="fa-solid fa-network-wired"></i>Rede básica</span>
+                <span class="block text-sm text-slate-400">DHCP Client ou IP fixo.</span>
+            </button>
+            <button id="tabLora" type="button" onclick="setSection('lora')"
+                class="section-tab rounded-2xl border-2 border-slate-700 bg-slate-800 p-4 text-left text-slate-300 shadow-xl transition hover:-translate-y-0.5 hover:border-slate-500">
+                <span class="mb-2 flex items-center gap-3 text-lg font-bold"><i class="fa-solid fa-satellite-dish"></i>LoRa</span>
+                <span class="block text-sm text-slate-400">Watchdogs para LoRa e conexão.</span>
+            </button>
+        </nav>
 
         <section id="wirelessPanel" class="tab-panel active">
             <div class="grid overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-2xl lg:grid-cols-2">
@@ -168,15 +175,14 @@
                         <div>
                             <label class="mb-1 block text-sm font-medium text-slate-300" for="wanInterface">Interface de entrada da rede</label>
                             <select id="wanInterface" class="network-input w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                                <option value="ether1">ether1</option>
-                                <option value="ether2">ether2</option>
-                                <option value="ether3">ether3</option>
-                                <option value="ether4">ether4</option>
-                                <option value="ether5">ether5</option>
-                                <option value="sfp1">sfp1</option>
-                                <option value="bridge">bridge</option>
+                                <option value="ether1">Porta Ethernet 1</option>
+                                <option value="ether2">Porta Ethernet 2</option>
+                                <option value="ether3">Porta Ethernet 3</option>
+                                <option value="ether4">Porta Ethernet 4</option>
+                                <option value="ether5">Porta Ethernet 5</option>
+                                <option value="sfp1">Porta SFP 1</option>
                             </select>
-                            <p class="mt-1 text-xs text-slate-500">Escolha onde o cabo da rede será conectado.</p>
+                            <p class="mt-1 text-xs text-slate-500">O script localizará o nome atual da porta pelo padrão de fábrica.</p>
                         </div>
 
                         <div>
@@ -197,29 +203,14 @@
                                 <input id="staticIp" type="text" value="10.10.1.97/24" class="network-input w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 font-mono focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
                                 <p class="mt-1 text-xs text-slate-500">Exemplo: 10.10.1.97/24</p>
                             </div>
-                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                <div>
-                                    <label class="mb-1 block text-sm font-medium text-slate-300" for="staticGateway">Gateway da rede</label>
-                                    <input id="staticGateway" type="text" value="10.10.1.1" class="network-input w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 font-mono focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                                </div>
-                                <div>
-                                    <label class="mb-1 block text-sm font-medium text-slate-300" for="authorizedNetwork">Rede autorizada</label>
-                                    <input id="authorizedNetwork" type="text" value="10.10.1.0/24" class="network-input w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 font-mono focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                                </div>
-                            </div>
                             <div>
-                                <label class="mb-1 block text-sm font-medium text-slate-300" for="dnsServers">DNS</label>
-                                <input id="dnsServers" type="text" value="10.10.1.1,8.8.8.8" class="network-input w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 font-mono focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                <label class="mb-1 block text-sm font-medium text-slate-300" for="staticGateway">Gateway da rede</label>
+                                <input id="staticGateway" type="text" value="10.10.1.1" class="network-input w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 font-mono focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                <p class="mt-1 text-xs text-slate-500">A rede autorizada será calculada automaticamente como a rede /24 do gateway. O DNS será o gateway e 8.8.8.8.</p>
                             </div>
                         </div>
 
-                        <label class="flex cursor-pointer items-center justify-between rounded-xl border border-slate-700 bg-slate-900 p-4">
-                            <span>
-                                <span class="block text-sm font-medium text-slate-200">Habilitar interface LoRa</span>
-                                <span class="block text-xs text-slate-500">Só terá efeito se este MikroTik possuir LoRa.</span>
-                            </span>
-                            <input id="enableLora" type="checkbox" checked class="network-input h-5 w-5 accent-blue-600">
-                        </label>
+
                     </form>
                 </div>
 
@@ -252,6 +243,98 @@
                 </div>
             </div>
         </section>
+
+        <section id="loraPanel" class="tab-panel">
+            <div class="mb-5 rounded-2xl border border-violet-500/30 bg-violet-500/10 p-5 shadow-xl">
+                <div class="flex items-start gap-3">
+                    <div class="rounded-lg bg-violet-600 p-2.5"><i class="fa-solid fa-shield-halved text-white"></i></div>
+                    <div>
+                        <h2 class="font-bold text-white">Proteção do gateway LoRa — RouterOS 7.19.4</h2>
+                        <p class="mt-1 text-sm text-slate-300">Esta aba é exclusiva para o <strong>wAP LR9 kit</strong>. O script encontra automaticamente a interface LoRa e utiliza sempre a porta física <span class="font-mono">ether1</span> pelo nome padrão de fábrica.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-2xl lg:grid-cols-2">
+                <div class="max-h-[78vh] overflow-y-auto border-b border-slate-700 p-6 lg:border-b-0 lg:border-r lg:p-8">
+                    <div class="mb-6">
+                        <h2 class="text-xl font-bold">Gerador de watchdogs LoRa</h2>
+                        <p class="mt-1 text-sm text-slate-400">Selecione as proteções que deseja instalar.</p>
+                    </div>
+
+                    <form class="space-y-4">
+                        <div class="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
+                            <div class="flex items-center gap-3">
+                                <i class="fa-solid fa-ethernet text-violet-400"></i>
+                                <div>
+                                    <span class="block text-sm font-medium text-slate-200">Porta de rede: Ethernet 1</span>
+                                    <span class="block text-xs text-slate-500">Definida automaticamente para o wAP LR9 kit; não é necessário escolher.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <label class="flex cursor-pointer items-center justify-between rounded-xl border border-slate-700 bg-slate-900 p-4">
+                            <span><span class="block text-sm font-medium text-slate-200">Monitorar desconexão do servidor LNS</span><span class="block text-xs text-slate-500">Reinicia o LoRa somente quando surgir um novo log de desconexão.</span></span>
+                            <input id="enableLnsWatchdog" type="checkbox" checked class="lora-input h-5 w-5 accent-violet-600">
+                        </label>
+
+                        <label class="flex cursor-pointer items-center justify-between rounded-xl border border-slate-700 bg-slate-900 p-4">
+                            <span><span class="block text-sm font-medium text-slate-200">Garantir que o LoRa permaneça ativo</span><span class="block text-xs text-slate-500">Reativa a interface caso ela apareça desabilitada.</span></span>
+                            <input id="enableLoraGuard" type="checkbox" checked class="lora-input h-5 w-5 accent-violet-600">
+                        </label>
+
+                        <label class="flex cursor-pointer items-center justify-between rounded-xl border border-slate-700 bg-slate-900 p-4">
+                            <span><span class="block text-sm font-medium text-slate-200">Recuperar a porta de rede</span><span class="block text-xs text-slate-500">Após falhas consecutivas de ping, desliga e liga a porta física.</span></span>
+                            <input id="enableWanWatchdog" type="checkbox" checked class="lora-input h-5 w-5 accent-violet-600">
+                        </label>
+
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="mb-1 block text-sm font-medium text-slate-300" for="pingTarget">IP usado no teste</label>
+                                <input id="pingTarget" type="text" value="8.8.8.8" class="lora-input w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 font-mono focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500">
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-sm font-medium text-slate-300" for="pingFailures">Falhas antes de recuperar</label>
+                                <select id="pingFailures" class="lora-input w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500">
+                                    <option value="2">2 verificações</option>
+                                    <option value="3" selected>3 verificações</option>
+                                    <option value="4">4 verificações</option>
+                                    <option value="5">5 verificações</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="mb-1 block text-sm font-medium text-slate-300" for="loraInterval">Verificar LoRa a cada</label>
+                                <select id="loraInterval" class="lora-input w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500">
+                                    <option value="5m">5 minutos</option><option value="10m">10 minutos</option><option value="30m" selected>30 minutos</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-sm font-medium text-slate-300" for="wanInterval">Verificar internet a cada</label>
+                                <select id="wanInterval" class="lora-input w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500">
+                                    <option value="5m">5 minutos</option><option value="10m" selected>10 minutos</option><option value="15m">15 minutos</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="flex min-h-[720px] flex-col bg-slate-900">
+                    <div class="flex items-center justify-between border-b border-slate-800 bg-slate-800/50 p-4">
+                        <span class="font-mono text-sm text-slate-300"><i class="fa-solid fa-terminal mr-2 text-slate-400"></i>Script de proteção LoRa</span>
+                        <button type="button" onclick="copyText('loraOutput')" class="rounded-md bg-violet-600 px-4 py-1.5 text-sm font-medium hover:bg-violet-500"><i class="fa-regular fa-copy mr-2"></i>Copiar script</button>
+                    </div>
+                    <div class="flex-1 p-4">
+                        <textarea id="loraOutput" readonly spellcheck="false" class="h-full min-h-[620px] w-full resize-none rounded-lg border border-slate-800 bg-slate-950 p-3 font-mono text-sm text-green-400 focus:outline-none"></textarea>
+                    </div>
+                    <div class="border-t border-slate-800 bg-slate-800/80 p-3 text-xs text-slate-400">
+                        <i class="fa-solid fa-circle-info mr-1 text-violet-400"></i>O script pode ser colado inteiro no New Terminal. Ele substitui apenas scripts e schedulers com os mesmos nomes.
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <div id="toast" class="toast font-medium"><i class="fa-solid fa-check-circle mr-2"></i><span id="toastText">Copiado com sucesso!</span></div>
@@ -266,18 +349,28 @@
         const safeValue = (id, fallback = '') => byId(id).value.trim() || fallback;
         const escapeRouterString = (value) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
+        function setSection(section) {
+            currentSection = section;
+            ['wireless', 'network', 'lora'].forEach((name) => {
+                byId(`${name}Panel`).classList.toggle('active', section === name);
+                const button = byId(`tab${name.charAt(0).toUpperCase()}${name.slice(1)}`);
+                const active = section === name;
+                button.classList.toggle('bg-blue-600', active && name !== 'lora');
+                button.classList.toggle('border-blue-500', active && name !== 'lora');
+                button.classList.toggle('bg-violet-600', active && name === 'lora');
+                button.classList.toggle('border-violet-500', active && name === 'lora');
+                button.classList.toggle('text-white', active);
+                button.classList.toggle('bg-slate-800', !active);
+                button.classList.toggle('border-slate-700', !active);
+                button.classList.toggle('text-slate-300', !active);
+            });
+        }
+
         function activateButton(active, inactive) {
             active.classList.add('bg-blue-600', 'text-white', 'shadow');
             active.classList.remove('text-slate-400', 'hover:text-white');
             inactive.classList.remove('bg-blue-600', 'text-white', 'shadow');
             inactive.classList.add('text-slate-400', 'hover:text-white');
-        }
-
-        function setSection(section) {
-            currentSection = section;
-            byId('wirelessPanel').classList.toggle('active', section === 'wireless');
-            byId('networkPanel').classList.toggle('active', section === 'network');
-            activateButton(section === 'wireless' ? byId('tabWireless') : byId('tabNetwork'), section === 'wireless' ? byId('tabNetwork') : byId('tabWireless'));
         }
 
         function setPackage(pkg) {
@@ -300,112 +393,171 @@
             generateNetworkScript();
         }
 
+        function interfaceResolver(defaultName, variableName = 'uplinkName') {
+            const menu = defaultName.startsWith('sfp') ? '/interface ethernet' : '/interface ethernet';
+            return `:local physicalId [${menu} find where default-name="${defaultName}"]\n` +
+                   `:if ([:len $physicalId] = 0) do={ :error "Porta fisica ${defaultName} nao encontrada" }\n` +
+                   `:local ${variableName} [${menu} get $physicalId name]\n`;
+        }
+
         function generateWirelessScript() {
             const ssid = escapeRouterString(safeValue('ssid', 'Link_Provedor'));
             const senha = escapeRouterString(safeValue('senha', 'Seguranca123'));
             const freq = safeValue('frequencia', '5500');
             const ip = safeValue('wirelessIp', '192.168.88.2/24');
             const gateway = safeValue('wirelessGateway', '192.168.88.1');
-            const wlanInterface = currentPackage === 'wifi' ? 'wifi1' : 'wlan1';
+            const wifiFinder = currentPackage === 'wifi' ? '/interface wifi find where default-name="wifi1"' : '/interface wireless find where default-name="wlan1"';
+            const wifiGetter = currentPackage === 'wifi' ? '/interface wifi get $radioId name' : '/interface wireless get $radioId name';
 
-            let script = `# ==================================================\n`;
-            script += `# SETUP MIKROTIK - MODO: ${currentMode.toUpperCase()}\n`;
-            script += `# Aplicacao: Bridge Transparente\n`;
-            script += `# Pacote: ${currentPackage.toUpperCase()}\n`;
-            script += `# ==================================================\n\n`;
-            script += `# 1. Limpando enderecos IP existentes\n`;
-            script += `:do { /ip address remove [find interface=bridge-lan] } on-error={}\n`;
-            script += `:do { /ip address remove [find interface=${wlanInterface}] } on-error={}\n`;
-            script += `:do { /ip address remove [find interface=ether1] } on-error={}\n\n`;
-            script += `# 2. Criando bridge local\n`;
-            script += `:do { /interface bridge add name=bridge-lan comment="Bridge Local LAN" } on-error={}\n`;
-            script += `:do { /interface bridge port add bridge=bridge-lan interface=ether1 } on-error={}\n`;
-            script += `:do { /interface bridge port add bridge=bridge-lan interface=${wlanInterface} } on-error={}\n\n`;
-            script += `# 3. Perfil de seguranca\n`;
+            let script = `# ==================================================\n# SETUP MIKROTIK - MODO: ${currentMode.toUpperCase()}\n# Pacote: ${currentPackage.toUpperCase()}\n# ==================================================\n\n`;
+            script += `# Localiza interfaces pelos nomes de fabrica\n`;
+            script += interfaceResolver('ether1', 'etherName');
+            script += `:local radioId [${wifiFinder}]\n`;
+            script += `:if ([:len $radioId] = 0) do={ :error "Interface wireless padrao nao encontrada" }\n`;
+            script += `:local radioName [${wifiGetter}]\n\n`;
+            script += `# Cria uma bridge controlada por este setup\n`;
+            script += `:do { /interface bridge add name=bridge-field comment="Bridge Field Setup" } on-error={}\n`;
+            script += `:do { /interface bridge port add bridge=bridge-field interface=$etherName } on-error={}\n`;
+            script += `:do { /interface bridge port add bridge=bridge-field interface=$radioName } on-error={}\n\n`;
 
             if (currentPackage === 'wireless') {
-                script += `:do { /interface wireless security-profiles remove [find name=perfil_seguranca] } on-error={}\n`;
-                script += `/interface wireless security-profiles add name=perfil_seguranca mode=dynamic-keys authentication-types=wpa2-psk unicast-ciphers=aes-ccm group-ciphers=aes-ccm wpa2-pre-shared-key="${senha}"\n\n`;
-                script += `/interface wireless set [find default-name=wlan1] \\\n`;
-                script += `    mode=${currentMode === 'AP' ? 'bridge' : 'station-bridge'} \\\n`;
-                script += `    ssid="${ssid}" \\\n`;
-                if (currentMode === 'AP') script += `    frequency=${freq} \\\n`;
-                script += `    band=5ghz-a/n/ac \\\n`;
-                script += `    country=brazil \\\n`;
-                script += `    wireless-protocol=802.11 \\\n`;
-                script += `    security-profile=perfil_seguranca \\\n`;
-                script += `    disabled=no\n\n`;
+                script += `:do { /interface wireless security-profiles remove [find name=perfil_field_setup] } on-error={}\n`;
+                script += `/interface wireless security-profiles add name=perfil_field_setup mode=dynamic-keys authentication-types=wpa2-psk unicast-ciphers=aes-ccm group-ciphers=aes-ccm wpa2-pre-shared-key="${senha}"\n`;
+                script += `/interface wireless set $radioId mode=${currentMode === 'AP' ? 'bridge' : 'station-bridge'} ssid="${ssid}"`;
+                if (currentMode === 'AP') script += ` frequency=${freq}`;
+                script += ` band=5ghz-a/n/ac country=brazil wireless-protocol=802.11 security-profile=perfil_field_setup disabled=no\n\n`;
             } else {
-                script += `:do { /interface wifi security remove [find name=perfil_seguranca] } on-error={}\n`;
-                script += `/interface wifi security add name=perfil_seguranca authentication-types=wpa2-psk passphrase="${senha}"\n\n`;
-                script += `/interface wifi set [find default-name=wifi1] \\\n`;
-                script += `    configuration.mode=${currentMode === 'AP' ? 'ap' : 'station-bridge'} \\\n`;
-                script += `    configuration.country=Brazil \\\n`;
-                script += `    configuration.ssid="${ssid}" \\\n`;
-                if (currentMode === 'AP') script += `    channel.frequency=${freq} \\\n`;
-                script += `    security=perfil_seguranca \\\n`;
-                script += `    disabled=no\n\n`;
+                script += `:do { /interface wifi security remove [find name=perfil_field_setup] } on-error={}\n`;
+                script += `/interface wifi security add name=perfil_field_setup authentication-types=wpa2-psk passphrase="${senha}"\n`;
+                script += `/interface wifi set $radioId configuration.mode=${currentMode === 'AP' ? 'ap' : 'station-bridge'} configuration.country=Brazil configuration.ssid="${ssid}"`;
+                if (currentMode === 'AP') script += ` channel.frequency=${freq}`;
+                script += ` security=perfil_field_setup disabled=no\n\n`;
             }
-
-            script += `# 4. Rede e roteamento\n`;
-            script += `/ip address add address=${ip} interface=bridge-lan\n`;
-            script += `/ip route add dst-address=0.0.0.0/0 gateway=${gateway}\n\n`;
+            script += `/ip address add address=${ip} interface=bridge-field\n`;
+            script += `/ip route add dst-address=0.0.0.0/0 gateway=${gateway}\n`;
             script += `:log info "FIELD-SETUP: configuracao de enlace concluida"\n`;
             byId('wirelessOutput').value = script;
         }
 
+        function gatewayTo24Network(gateway) {
+            const octets = gateway.trim().split('.').map(Number);
+            const valid = octets.length === 4 && octets.every(octet => Number.isInteger(octet) && octet >= 0 && octet <= 255);
+            return valid ? `${octets[0]}.${octets[1]}.${octets[2]}.0/24` : '';
+        }
+
         function generateNetworkScript() {
             const deviceName = escapeRouterString(safeValue('deviceName', 'MikroTik-Cliente'));
-            const wanInterface = safeValue('wanInterface', 'ether1');
-            const enableLora = byId('enableLora').checked;
-
+            const defaultInterface = safeValue('wanInterface', 'ether1');
             byId('staticNetworkFields').classList.toggle('hidden', dhcpEnabled);
 
-            let script = `# ============================================================\n`;
-            script += `# MIKROTIK FIELD SETUP - REDE BASICA\n`;
-            script += `# Tipo: ${dhcpEnabled ? 'IP AUTOMATICO (DHCP)' : 'IP FIXO'}\n`;
-            script += `# ============================================================\n\n`;
-            script += `# Nome do device\n`;
-            script += `/system identity set name="${deviceName}"\n\n`;
-            script += `# Configuracoes padrao do acesso\n`;
+            let script = `# ============================================================\n# MIKROTIK FIELD SETUP - REDE BASICA\n# Tipo: ${dhcpEnabled ? 'IP AUTOMATICO (DHCP)' : 'IP FIXO'}\n# ============================================================\n\n`;
+            script += interfaceResolver(defaultInterface, 'networkInterface');
+            script += `/system identity set name="${deviceName}"\n`;
             script += `/system clock set time-zone-name=America/Fortaleza\n`;
-            script += `/ip service set [find where name="winbox"] disabled=no port=8291`;
-
-            if (!dhcpEnabled) {
-                const authorizedNetwork = safeValue('authorizedNetwork', '10.10.1.0/24');
-                script += ` address=${authorizedNetwork}`;
-            }
-            script += `\n\n`;
-
-            script += `# Remove configuracoes de endereco anteriores\n`;
+            script += `/ip service set [find where name="winbox"] disabled=no port=8291\n\n`;
             script += `:do { /ip dhcp-client remove [find] } on-error={}\n`;
             script += `:do { /ip address remove [find] } on-error={}\n`;
             script += `:do { /ip route remove [find where dst-address="0.0.0.0/0"] } on-error={}\n\n`;
 
             if (dhcpEnabled) {
-                script += `# Recebe IP, gateway e DNS automaticamente\n`;
-                script += `/ip dhcp-client add interface=${wanInterface} add-default-route=yes default-route-distance=1 use-peer-dns=yes use-peer-ntp=yes disabled=no comment="Rede via DHCP"\n\n`;
+                script += `/ip dhcp-client add interface=$networkInterface add-default-route=yes default-route-distance=1 use-peer-dns=yes use-peer-ntp=yes disabled=no comment="Rede via DHCP"\n\n`;
             } else {
                 const staticIp = safeValue('staticIp', '10.10.1.97/24');
                 const staticGateway = safeValue('staticGateway', '10.10.1.1');
-                const dnsServers = safeValue('dnsServers', '10.10.1.1,8.8.8.8');
-                script += `# Configuracao de IP fixo\n`;
-                script += `/ip address add address=${staticIp} interface=${wanInterface} comment="IP fixo do device"\n`;
+                const authorizedNetwork = gatewayTo24Network(staticGateway);
+                script += `/ip address add address=${staticIp} interface=$networkInterface comment="IP fixo do device"\n`;
                 script += `/ip route add dst-address=0.0.0.0/0 gateway=${staticGateway} distance=1 comment="Gateway principal"\n`;
-                script += `/ip dns set servers=${dnsServers} allow-remote-requests=no\n\n`;
+                script += `/ip dns set servers=${staticGateway},8.8.8.8 allow-remote-requests=no\n`;
+                if (authorizedNetwork) {
+                    script += `/ip service set [find where name="winbox"] address=${authorizedNetwork}\n\n`;
+                } else {
+                    script += `# ATENCAO: gateway invalido; acesso WinBox nao foi restringido automaticamente\n\n`;
+                }
             }
-
-            if (enableLora) {
-                script += `# Garante que a interface LoRa esteja habilitada\n`;
-                script += `:local loraId [/iot lora find]\n`;
-                script += `:if ([:len $loraId] > 0) do={\n`;
-                script += `    :do { /iot lora enable $loraId } on-error={ :log warning "FIELD-SETUP: nao foi possivel habilitar o LoRa" }\n`;
-                script += `}\n\n`;
-            }
-
             script += `:log info "FIELD-SETUP: configuracao basica concluida"\n`;
             byId('networkOutput').value = script;
             byId('resetOutput').value = `/system reset-configuration no-defaults=yes skip-backup=yes`;
+        }
+
+        function generateLoraScript() {
+            const defaultInterface = 'ether1';
+            const pingTarget = safeValue('pingTarget', '8.8.8.8');
+            const failures = safeValue('pingFailures', '3');
+            const loraInterval = safeValue('loraInterval', '30m');
+            const wanInterval = safeValue('wanInterval', '10m');
+            const useLns = byId('enableLnsWatchdog').checked;
+            const useGuard = byId('enableLoraGuard').checked;
+            const useWan = byId('enableWanWatchdog').checked;
+
+            let script = `# ============================================================\n# PROTECAO LORA - ROUTEROS 7.19.4\n# ============================================================\n\n`;
+            script += `# Remove versoes anteriores criadas por este gerador\n`;
+            script += `:do { /system scheduler remove [find where name="monitorLora"] } on-error={}\n`;
+            script += `:do { /system scheduler remove [find where name="keepAlive10min"] } on-error={}\n`;
+            script += `:do { /system script remove [find where name="checkLora"] } on-error={}\n`;
+            script += `:do { /system script remove [find where name="keepAlive"] } on-error={}\n`;
+            script += `:do { /system script remove [find where name="resetWAN"] } on-error={}\n\n`;
+
+            if (useWan) {
+                script += `# O wAP LR9 kit possui uma unica porta Ethernet; ela e localizada pelo default-name ether1\n`;
+                script += `/system script add name=resetWAN policy=read,write,test source={\n`;
+                script += `    :local uplinkId [/interface ethernet find where default-name="${defaultInterface}"]\n`;
+                script += `    :if ([:len $uplinkId] = 0) do={ :log error "WAN-WATCHDOG: porta fisica ${defaultInterface} nao encontrada"; :return }\n`;
+                script += `    /interface ethernet disable $uplinkId\n    :delay 10s\n    /interface ethernet enable $uplinkId\n`;
+                script += `    :log warning "WAN-WATCHDOG: porta fisica reiniciada"\n}\n\n`;
+                script += `/system script add name=keepAlive policy=read,write,test source={\n`;
+                script += `    :global wanFailureCount\n    :if ([:typeof $wanFailureCount] = "nothing") do={ :set wanFailureCount 0 }\n`;
+                script += `    :local replies [/ping ${pingTarget} count=5 interval=500ms]\n`;
+                script += `    :if ($replies = 0) do={ :set wanFailureCount ($wanFailureCount + 1); :log warning ("WAN-WATCHDOG: falha " . $wanFailureCount . "/${failures}") } else={ :set wanFailureCount 0 }\n`;
+                script += `    :if ($wanFailureCount >= ${failures}) do={ :set wanFailureCount 0; /system script run resetWAN }\n`;
+                script += `}\n`;
+                script += `/system scheduler add name=keepAlive10min interval=${wanInterval} start-time=startup on-event=keepAlive policy=read,write,test disabled=no\n\n`;
+            }
+
+            if (useLns || useGuard) {
+                script += `/system script add name=checkLora policy=read,write,test source={\n`;
+                script += `    :global lastLnsDisconnect\n    :global loraWatchdogRunning\n`;
+                script += `    :if ($loraWatchdogRunning = true) do={ :log warning "LORA-WATCHDOG: execucao anterior ativa"; :return }\n`;
+                script += `    :set loraWatchdogRunning true\n`;
+                script += `    :do {\n`;
+                script += `        :local loraIds [/iot lora find]\n`;
+                script += `        :if ([:len $loraIds] = 0) do={ :error "nenhuma interface LoRa encontrada" }\n`;
+                script += `        :local loraId [:pick $loraIds 0]\n`;
+                script += `        :local loraStatus [/iot lora get $loraId status]\n`;
+                script += `        :local loraDisabled [/iot lora get $loraId disabled]\n`;
+                if (useGuard) {
+                    script += `        :if (($loraDisabled = true) || ($loraStatus = "Stopping...")) do={\n`;
+                    script += `            :log warning ("LORA-WATCHDOG: LoRa desativado; status=" . $loraStatus)\n`;
+                    script += `            :delay 30s\n`;
+                    script += `            :do { /iot lora enable $loraId } on-error={ :delay 30s; /iot lora enable $loraId }\n`;
+                    script += `            :delay 20s\n        }\n`;
+                }
+                if (useLns) {
+                    script += `        :local disconnectLogs [/log find where message~"LNS.*disconnected"]\n`;
+                    script += `        :if ([:len $disconnectLogs] > 0) do={\n`;
+                    script += `            :local newestDisconnect [:pick $disconnectLogs ([:len $disconnectLogs] - 1)]\n`;
+                    script += `            :if ([:typeof $lastLnsDisconnect] = "nothing") do={ :set lastLnsDisconnect $newestDisconnect; :log info "LORA-WATCHDOG: logs inicializados" } else={\n`;
+                    script += `                :if ($newestDisconnect != $lastLnsDisconnect) do={\n`;
+                    script += `                    :set lastLnsDisconnect $newestDisconnect\n`;
+                    script += `                    :log warning "LORA-WATCHDOG: nova desconexao LNS; reiniciando LoRa"\n`;
+                    script += `                    :do { /iot lora disable $loraId } on-error={}\n`;
+                    script += `                    :delay 30s\n`;
+                    script += `                    :do { /iot lora enable $loraId } on-error={ :delay 30s; /iot lora enable $loraId }\n`;
+                    script += `                    :delay 20s\n`;
+                    script += `                    :log info ("LORA-WATCHDOG: status final=" . [/iot lora get $loraId status])\n`;
+                    script += `                }\n            }\n        }\n`;
+                }
+                if (useGuard) {
+                    script += `        :if ([/iot lora get $loraId disabled] = true) do={ :delay 30s; /iot lora enable $loraId; :log warning "LORA-WATCHDOG: protecao final reativou o LoRa" }\n`;
+                }
+                script += `    } on-error={ :log error ("LORA-WATCHDOG: " . $message) }\n`;
+                script += `    :set loraWatchdogRunning false\n}\n`;
+                script += `/system scheduler add name=monitorLora interval=${loraInterval} start-time=startup on-event=checkLora policy=read,write,test disabled=no\n\n`;
+                script += `/system script run checkLora\n`;
+            }
+
+            if (!useWan && !useLns && !useGuard) script += `:log warning "FIELD-SETUP: nenhuma protecao selecionada"\n`;
+            script += `:log info "FIELD-SETUP: protecoes LoRa configuradas"\n`;
+            byId('loraOutput').value = script;
         }
 
         async function copyText(elementId) {
@@ -449,14 +601,14 @@
         }
 
         document.querySelectorAll('.wireless-input').forEach((input) => input.addEventListener('input', generateWirelessScript));
-        document.querySelectorAll('.network-input').forEach((input) => {
-            input.addEventListener('input', generateNetworkScript);
-            input.addEventListener('change', generateNetworkScript);
-        });
+        document.querySelectorAll('.network-input').forEach((input) => { input.addEventListener('input', generateNetworkScript); input.addEventListener('change', generateNetworkScript); });
+        document.querySelectorAll('.lora-input').forEach((input) => { input.addEventListener('input', generateLoraScript); input.addEventListener('change', generateLoraScript); });
 
         window.addEventListener('DOMContentLoaded', () => {
             generateWirelessScript();
             generateNetworkScript();
+            generateLoraScript();
+            setSection('wireless');
         });
     </script>
 </body>
