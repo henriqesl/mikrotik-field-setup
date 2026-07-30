@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 
+import ConnectionForm from "./components/ConnectionForm.jsx";
+import DeviceSummary from "./components/DeviceSummary.jsx";
+import { discoverDevice } from "./services/api.js";
+
 const API_STATES = {
   checking: {
     label: "Verificando backend",
@@ -17,6 +21,9 @@ const API_STATES = {
 
 function App() {
   const [apiState, setApiState] = useState("checking");
+  const [device, setDevice] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -43,34 +50,55 @@ function App() {
 
   const currentState = API_STATES[apiState];
 
+  async function handleConnect(connection) {
+    setIsLoading(true);
+    setErrorMessage("");
+    setDevice(null);
+
+    try {
+      const discoveredDevice = await discoverDevice(connection);
+      setDevice(discoveredDevice);
+      return true;
+    } catch (error) {
+      setErrorMessage(error.message);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return (
     <main className="page">
-      <section className="hero">
-        <div className="brand-mark" aria-hidden="true">
-          O
-        </div>
+      <header className="app-header">
+        <section className="hero">
+          <div className="brand-mark" aria-hidden="true">
+            O
+          </div>
 
-        <div>
-          <p className="eyebrow">MikroTik Field Assistant</p>
-          <h1>ORION</h1>
-          <p className="tagline">Configure. Monitore. Valide.</p>
-        </div>
-      </section>
-
-      <section className="card" aria-labelledby="initial-stage-title">
-        <div>
-          <p className="card-kicker">ORION Field V1</p>
-          <h2 id="initial-stage-title">Estrutura inicial pronta</h2>
-          <p>
-            O próximo passo será conectar a um MikroTik e identificar o
-            equipamento pela API do RouterOS.
-          </p>
-        </div>
+          <div>
+            <p className="eyebrow">MikroTik Field Assistant</p>
+            <h1>ORION</h1>
+            <p className="tagline">Configure. Monitore. Valide.</p>
+          </div>
+        </section>
 
         <div className={currentState.className} role="status">
           <span className="status-dot" aria-hidden="true" />
           {currentState.label}
         </div>
+      </header>
+
+      <section className="workspace">
+        <ConnectionForm isLoading={isLoading} onConnect={handleConnect} />
+
+        {errorMessage && (
+          <div className="error-message" role="alert">
+            <strong>Conexão não concluída</strong>
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {device && <DeviceSummary device={device} />}
       </section>
     </main>
   );

@@ -26,17 +26,24 @@ button {
 }
 
 .page {
-  width: min(960px, calc(100% - 2rem));
+  width: min(1040px, calc(100% - 2rem));
   min-height: 100vh;
   margin: 0 auto;
-  padding: 6rem 0;
+  padding: 4rem 0;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 2.5rem;
 }
 
 .hero {
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  margin-bottom: 2.5rem;
 }
 
 .brand-mark {
@@ -83,16 +90,18 @@ h2 {
 }
 
 .tagline,
-.card p {
+.security-note {
   margin-bottom: 0;
   color: #94a3b8;
 }
 
-.card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
+.workspace {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.connection-form,
+.device-card {
   padding: 2rem;
   border: 1px solid #1e3a5f;
   border-radius: 1.25rem;
@@ -100,8 +109,129 @@ h2 {
   box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 25%);
 }
 
-.card > div:first-child {
-  max-width: 36rem;
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.section-heading h2 {
+  margin-bottom: 0;
+}
+
+.step-label,
+.success-badge {
+  padding: 0.4rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.step-label {
+  color: #94a3b8;
+  background: #1e293b;
+}
+
+.success-badge {
+  color: #86efac;
+  background: rgb(34 197 94 / 12%);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.field--wide {
+  grid-column: 1 / -1;
+}
+
+.field > span {
+  color: #cbd5e1;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.field input {
+  width: 100%;
+  min-height: 2.9rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #334155;
+  border-radius: 0.65rem;
+  outline: none;
+  color: #f8fafc;
+  background: #0b1220;
+}
+
+.field input:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgb(96 165 250 / 12%);
+}
+
+.connection-options {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  min-height: 2.9rem;
+  padding-top: 1.45rem;
+}
+
+.check-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #cbd5e1;
+  font-size: 0.84rem;
+}
+
+.check-field input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #2563eb;
+}
+
+.security-note {
+  margin-top: 1rem;
+  padding: 0.8rem 1rem;
+  border-left: 3px solid #f59e0b;
+  border-radius: 0.3rem;
+  background: rgb(245 158 11 / 8%);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.primary-button {
+  min-height: 2.9rem;
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.15rem;
+  border: 0;
+  border-radius: 0.65rem;
+  color: white;
+  background: #2563eb;
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.primary-button:hover:not(:disabled) {
+  background: #3b82f6;
+}
+
+.primary-button:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 0.2rem;
+}
+
+.primary-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .status {
@@ -141,13 +271,74 @@ h2 {
   background: rgb(251 113 133 / 8%);
 }
 
+.error-message {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem 1.2rem;
+  border: 1px solid rgb(251 113 133 / 35%);
+  border-radius: 0.75rem;
+  color: #fecdd3;
+  background: rgb(159 18 57 / 18%);
+}
+
+.error-message span {
+  color: #fda4af;
+  font-size: 0.88rem;
+}
+
+.device-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.device-field {
+  padding: 1rem;
+  border: 1px solid #25354d;
+  border-radius: 0.75rem;
+  background: #0b1220;
+}
+
+.device-field dt {
+  margin-bottom: 0.35rem;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.device-field dd {
+  margin: 0;
+  color: #f8fafc;
+  font-weight: 700;
+}
+
 @media (max-width: 680px) {
   .page {
     padding: 3rem 0;
   }
 
-  .card {
+  .app-header,
+  .section-heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .form-grid,
+  .device-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .field--wide {
+    grid-column: auto;
+  }
+
+  .connection-options {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-top: 0.5rem;
   }
 }
