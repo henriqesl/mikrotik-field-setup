@@ -88,50 +88,62 @@ function ConnectionForm({ isLoading, onConnect }) {
           />
         </label>
 
-        <label className="field">
-          <span>Porta da API</span>
-          <input
-            max="65535"
-            min="1"
-            name="port"
-            onChange={updateField}
-            required
-            type="number"
-            value={form.port}
-          />
-        </label>
-
-        <div className="connection-options">
-          <label className="check-field">
-            <input
-              checked={form.use_tls}
-              name="use_tls"
-              onChange={updateTls}
-              type="checkbox"
-            />
-            <span>Usar TLS</span>
-          </label>
-
-          {form.use_tls && (
-            <label className="check-field">
-              <input
-                checked={form.verify_tls}
-                name="verify_tls"
-                onChange={updateField}
-                type="checkbox"
-              />
-              <span>Validar certificado</span>
-            </label>
-          )}
-        </div>
       </div>
 
-      {!form.use_tls && (
-        <p className="security-note">
-          A porta 8728 não criptografa as credenciais. Use somente em uma rede
-          local confiável ou habilite API-SSL no MikroTik.
-        </p>
-      )}
+      <details className="advanced-options">
+        <summary>
+          <span>Opções avançadas</span>
+          <small>
+            {form.use_tls ? `API-SSL · porta ${form.port}` : `API · porta ${form.port}`}
+          </small>
+        </summary>
+
+        <div className="advanced-grid">
+          <label className="field">
+            <span>Porta da API</span>
+            <input
+              max="65535"
+              min="1"
+              name="port"
+              onChange={updateField}
+              required
+              type="number"
+              value={form.port}
+            />
+          </label>
+
+          <div className="connection-options">
+            <label className="check-field">
+              <input
+                checked={form.use_tls}
+                name="use_tls"
+                onChange={updateTls}
+                type="checkbox"
+              />
+              <span>Usar conexão segura (TLS)</span>
+            </label>
+
+            {form.use_tls && (
+              <label className="check-field">
+                <input
+                  checked={form.verify_tls}
+                  name="verify_tls"
+                  onChange={updateField}
+                  type="checkbox"
+                />
+                <span>Validar certificado</span>
+              </label>
+            )}
+          </div>
+        </div>
+
+        {!form.use_tls && (
+          <p className="security-note">
+            A API padrão deve ser usada somente na rede local da instalação.
+            Para redes não confiáveis, habilite API-SSL no MikroTik.
+          </p>
+        )}
+      </details>
 
       <button className="primary-button" disabled={isLoading} type="submit">
         {isLoading ? "Conectando…" : "Conectar e identificar"}
@@ -141,4 +153,3 @@ function ConnectionForm({ isLoading, onConnect }) {
 }
 
 export default ConnectionForm;
-

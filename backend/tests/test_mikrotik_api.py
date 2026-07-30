@@ -29,6 +29,17 @@ def test_discover_mikrotik_returns_normalized_device(monkeypatch) -> None:
             model="LHG 5 ax",
             routeros_version="7.20.8",
             architecture="arm64",
+            wifi_package="wifi-qcom",
+            wifi_stack="wifi",
+            wifi_interfaces=[
+                {
+                    "name": "wifi1",
+                    "default_name": "wifi1",
+                    "mac_address": "AA:BB:CC:DD:EE:FF",
+                    "disabled": False,
+                    "running": True,
+                }
+            ],
         )
 
     monkeypatch.setattr(mikrotik, "discover_device", fake_discover)
@@ -41,6 +52,17 @@ def test_discover_mikrotik_returns_normalized_device(monkeypatch) -> None:
         "model": "LHG 5 ax",
         "routeros_version": "7.20.8",
         "architecture": "arm64",
+        "wifi_package": "wifi-qcom",
+        "wifi_stack": "wifi",
+        "wifi_interfaces": [
+            {
+                "name": "wifi1",
+                "default_name": "wifi1",
+                "mac_address": "AA:BB:CC:DD:EE:FF",
+                "disabled": False,
+                "running": True,
+            }
+        ],
     }
     assert "field-secret" not in response.text
 
@@ -87,4 +109,3 @@ def test_discover_mikrotik_rejects_invalid_ip() -> None:
     response = client.post("/api/mikrotik/discover", json=invalid_connection)
 
     assert response.status_code == 422
-

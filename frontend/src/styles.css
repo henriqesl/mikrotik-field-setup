@@ -181,7 +181,6 @@ h2 {
   align-items: center;
   gap: 1.25rem;
   min-height: 2.9rem;
-  padding-top: 1.45rem;
 }
 
 .check-field {
@@ -206,6 +205,44 @@ h2 {
   background: rgb(245 158 11 / 8%);
   font-size: 0.8rem;
   line-height: 1.5;
+}
+
+.advanced-options {
+  margin-top: 1rem;
+  border: 1px solid #25354d;
+  border-radius: 0.75rem;
+  background: rgb(11 18 32 / 55%);
+}
+
+.advanced-options summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  color: #cbd5e1;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 700;
+  list-style-position: inside;
+}
+
+.advanced-options summary small {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.advanced-grid {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.4fr) 1fr;
+  align-items: end;
+  gap: 1rem;
+  padding: 0 1rem 1rem;
+}
+
+.advanced-options .security-note {
+  margin: 0 1rem 1rem;
 }
 
 .primary-button {
@@ -315,6 +352,85 @@ h2 {
   font-weight: 700;
 }
 
+.wifi-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 2rem 0 0.8rem;
+}
+
+.wifi-heading h3 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 1.05rem;
+}
+
+.wifi-meta {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.wifi-meta span {
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.45rem;
+  color: #93c5fd;
+  background: rgb(37 99 235 / 12%);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.interface-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.interface-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #25354d;
+  border-radius: 0.75rem;
+  background: #0b1220;
+}
+
+.interface-card > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.interface-card strong {
+  color: #f8fafc;
+}
+
+.interface-card > div span {
+  color: #64748b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+}
+
+.interface-state {
+  color: #cbd5e1;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.interface-state--active {
+  color: #4ade80;
+}
+
+.empty-state {
+  margin: 0;
+  padding: 1rem;
+  border: 1px dashed #334155;
+  border-radius: 0.75rem;
+  color: #64748b;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
 @media (max-width: 680px) {
   .page {
     padding: 3rem 0;
@@ -327,7 +443,8 @@ h2 {
   }
 
   .form-grid,
-  .device-grid {
+  .device-grid,
+  .advanced-grid {
     grid-template-columns: 1fr;
   }
 
@@ -340,5 +457,14 @@ h2 {
     flex-direction: column;
     gap: 0.75rem;
     padding-top: 0.5rem;
+  }
+
+  .wifi-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .wifi-meta {
+    flex-wrap: wrap;
   }
 }

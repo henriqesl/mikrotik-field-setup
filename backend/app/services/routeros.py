@@ -4,12 +4,18 @@ from collections.abc import Mapping
 from typing import Any
 
 import routeros
-from routeros.errors import LoginError, RouterOSError
+from routeros.errors import DeviceError, LoginError, RouterOSError
 
-from app.models.mikrotik import DeviceSummary, MikroTikConnection
+from app.models.mikrotik import DeviceSummary, MikroTikConnection, WiFiInterface
 
 
 CONNECTION_TIMEOUT_SECONDS = 5.0
+WIFI_PACKAGES = ("wifi-qcom", "wifi-qcom-ac", "wifiwave2", "wireless")
+WIFI_MENUS = {
+    "wifi": "/interface/wifi/print",
+    "wifiwave2": "/interface/wifiwave2/print",
+    "wireless": "/interface/wireless/print",
+}
 
 
 class MikroTikError(Exception):
@@ -53,9 +59,77 @@ def _first_row(reply: Any) -> Mapping[str, str]:
     return reply.re[0].map
 
 
+def _rows(reply: Any) -> list[Mapping[str, str]]:
+    return [sentence.map for sentence in reply.re]
+
+
+def _optional_bool(value: str | None) -> bool | None:
+    if value is None:
+        return None
+
+    return value.lower() in {"true", "yes"}
+
+
+def _active_wifi_package(client: Any) -> str | None:
+    try:
+        packages = _rows(client.run("/system/package/print"))
+    except DeviceError:
+        return None
+
+    active_names = {
+        package.get("name")
+        for package in packages
+        if not _optional_bool(package.get("disabled"))
+        and not _optional_bool(package.get("available"))
+    }
+
+    return next((name for name in WIFI_PACKAGES if name in active_names), None)
+
+
+def _menu_order(package: str | None) -> list[str]:
+    preferred_stack = {
+        "wifi-qcom": "wifi",
+        "wifi-qcom-ac": "wifi",
+        "wifiwave2": "wifiwave2",
+        "wireless": "wireless",
+    }.get(package)
+    stacks = ["wifi", "wireless", "wifiwave2"]
+
+    if preferred_stack:
+        stacks.remove(preferred_stack)
+        stacks.insert(0, preferred_stack)
+
+    return stacks
+
+
+def _read_wifi(client: Any) -> tuple[str | None, str, list[WiFiInterface]]:
+    package = _active_wifi_package(client)
+
+    for stack in _menu_order(package):
+        try:
+            rows = _rows(client.run(WIFI_MENUS[stack]))
+        except DeviceError:
+            continue
+
+        interfaces = [
+            WiFiInterface(
+                name=row.get("name") or row.get("default-name"),
+                default_name=row.get("default-name"),
+                mac_address=row.get("mac-address"),
+                disabled=_optional_bool(row.get("disabled")),
+                running=_optional_bool(row.get("running")),
+            )
+            for row in rows
+        ]
+        return package, stack, interfaces
+
+    return package, "not_detected", []
+
+
 def _read_device_summary(client: Any) -> DeviceSummary:
     identity = _first_row(client.run("/system/identity/print"))
     resource = _first_row(client.run("/system/resource/print"))
+    wifi_package, wifi_stack, wifi_interfaces = _read_wifi(client)
 
     identity_name = identity.get("name")
     routeros_version = resource.get("version")
@@ -68,6 +142,9 @@ def _read_device_summary(client: Any) -> DeviceSummary:
         model=resource.get("board-name"),
         routeros_version=routeros_version,
         architecture=resource.get("architecture-name"),
+        wifi_package=wifi_package,
+        wifi_stack=wifi_stack,
+        wifi_interfaces=wifi_interfaces,
     )
 
 
@@ -107,4 +184,3 @@ def discover_device(connection: MikroTikConnection) -> DeviceSummary:
         raise MikroTikResponseError from error
     except OSError as error:
         raise MikroTikConnectionError from error
-
