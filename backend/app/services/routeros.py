@@ -1,3 +1,4 @@
+import re
 import socket
 import ssl
 from collections.abc import Mapping
@@ -6,7 +7,12 @@ from typing import Any
 import routeros
 from routeros.errors import DeviceError, LoginError, RouterOSError
 
-from app.models.mikrotik import DeviceSummary, MikroTikConnection, WiFiInterface
+from app.models.mikrotik import (
+    DeviceSummary,
+    MikroTikConnection,
+    WiFiInterface,
+    WiFiPeer,
+)
 
 
 CONNECTION_TIMEOUT_SECONDS = 5.0
@@ -15,6 +21,11 @@ WIFI_MENUS = {
     "wifi": "/interface/wifi/print",
     "wifiwave2": "/interface/wifiwave2/print",
     "wireless": "/interface/wireless/print",
+}
+REGISTRATION_MENUS = {
+    "wifi": "/interface/wifi/registration-table/print",
+    "wifiwave2": "/interface/wifiwave2/registration-table/print",
+    "wireless": "/interface/wireless/registration-table/print",
 }
 
 
@@ -68,6 +79,24 @@ def _optional_bool(value: str | None) -> bool | None:
         return None
 
     return value.lower() in {"true", "yes"}
+
+
+def _optional_int(value: str | None) -> int | None:
+    if value is None:
+        return None
+
+    try:
+        return int(value)
+    except ValueError:
+        return None
+
+
+def _signal_dbm(value: str | None) -> int | None:
+    if value is None:
+        return None
+
+    match = re.search(r"-?\d+", value)
+    return int(match.group()) if match else None
 
 
 def _active_wifi_package(client: Any) -> str | None:
@@ -126,10 +155,54 @@ def _read_wifi(client: Any) -> tuple[str | None, str, list[WiFiInterface]]:
     return package, "not_detected", []
 
 
+def _read_registration_table(
+    client: Any,
+    stack: str,
+) -> tuple[bool, list[WiFiPeer]]:
+    command = REGISTRATION_MENUS.get(stack)
+
+    if not command:
+        return False, []
+
+    try:
+        rows = _rows(client.run(command))
+    except DeviceError:
+        return False, []
+
+    peers = []
+
+    for row in rows:
+        signal = row.get("signal") or row.get("signal-strength")
+        peers.append(
+            WiFiPeer(
+                interface=row.get("interface"),
+                mac_address=row.get("mac-address"),
+                radio_name=row.get("radio-name"),
+                ssid=row.get("ssid"),
+                authorized=_optional_bool(row.get("authorized")),
+                signal=signal,
+                signal_dbm=_signal_dbm(signal),
+                tx_rate=row.get("tx-rate"),
+                rx_rate=row.get("rx-rate"),
+                tx_bits_per_second=_optional_int(row.get("tx-bits-per-second")),
+                rx_bits_per_second=_optional_int(row.get("rx-bits-per-second")),
+                uptime=row.get("uptime"),
+                last_activity=row.get("last-activity"),
+                band=row.get("band"),
+            )
+        )
+
+    return True, peers
+
+
 def _read_device_summary(client: Any) -> DeviceSummary:
     identity = _first_row(client.run("/system/identity/print"))
     resource = _first_row(client.run("/system/resource/print"))
     wifi_package, wifi_stack, wifi_interfaces = _read_wifi(client)
+    registration_table_available, wifi_peers = _read_registration_table(
+        client,
+        wifi_stack,
+    )
 
     identity_name = identity.get("name")
     routeros_version = resource.get("version")
@@ -145,6 +218,8 @@ def _read_device_summary(client: Any) -> DeviceSummary:
         wifi_package=wifi_package,
         wifi_stack=wifi_stack,
         wifi_interfaces=wifi_interfaces,
+        registration_table_available=registration_table_available,
+        wifi_peers=wifi_peers,
     )
 
 

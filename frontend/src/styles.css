@@ -431,6 +431,105 @@ h2 {
   text-align: center;
 }
 
+.peer-heading {
+  padding-top: 1.2rem;
+  border-top: 1px solid #1e293b;
+}
+
+.live-badge {
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  color: #86efac;
+  background: rgb(34 197 94 / 12%);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.peer-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.peer-card {
+  overflow: hidden;
+  border: 1px solid #25354d;
+  border-radius: 0.8rem;
+  background: #0b1220;
+}
+
+.peer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid #1e293b;
+}
+
+.peer-header > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.peer-header strong {
+  color: #f8fafc;
+}
+
+.peer-header > div span {
+  color: #64748b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+}
+
+.peer-state {
+  color: #4ade80;
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.peer-state--blocked {
+  color: #fb7185;
+}
+
+.peer-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+}
+
+.peer-metrics > div {
+  padding: 0.9rem 1rem;
+  border-right: 1px solid #1e293b;
+}
+
+.peer-metrics > div:last-child {
+  border-right: 0;
+}
+
+.peer-metrics dt {
+  margin-bottom: 0.25rem;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.peer-metrics dd {
+  margin: 0;
+  color: #e2e8f0;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.peer-details {
+  display: flex;
+  gap: 1rem;
+  padding: 0.65rem 1rem;
+  border-top: 1px solid #1e293b;
+  color: #64748b;
+  font-size: 0.7rem;
+}
+
 @media (max-width: 680px) {
   .page {
     padding: 3rem 0;
@@ -466,5 +565,27 @@ h2 {
 
   .wifi-meta {
     flex-wrap: wrap;
+  }
+
+  .peer-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .peer-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .peer-metrics > div:nth-child(2) {
+    border-right: 0;
+  }
+
+  .peer-metrics > div:nth-child(-n + 2) {
+    border-bottom: 1px solid #1e293b;
+  }
+
+  .peer-details {
+    flex-direction: column;
+    gap: 0.25rem;
   }
 }

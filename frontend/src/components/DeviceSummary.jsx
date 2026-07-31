@@ -28,6 +28,22 @@ function interfaceStatus(wifiInterface) {
   return "Estado não informado";
 }
 
+function authorizationLabel(authorized) {
+  if (authorized === true) {
+    return "Autorizado";
+  }
+
+  if (authorized === false) {
+    return "Não autorizado";
+  }
+
+  return "Registrado";
+}
+
+function peerName(peer) {
+  return peer.radio_name || peer.ssid || peer.mac_address || "Peer sem identificação";
+}
+
 function DeviceSummary({ device }) {
   return (
     <section className="device-card" aria-labelledby="device-title">
@@ -86,6 +102,84 @@ function DeviceSummary({ device }) {
         <p className="empty-state">
           Nenhuma interface Wi-Fi foi informada pelo equipamento.
         </p>
+      )}
+
+      <div className="wifi-heading peer-heading">
+        <div>
+          <p className="card-kicker">Registration table</p>
+          <h3>Equipamentos associados</h3>
+        </div>
+        {device.registration_table_available && (
+          <span className="live-badge">Leitura atual</span>
+        )}
+      </div>
+
+      {!device.registration_table_available ? (
+        <p className="empty-state">
+          A registration table não está disponível neste equipamento ou para
+          este usuário.
+        </p>
+      ) : device.wifi_peers.length === 0 ? (
+        <p className="empty-state">Nenhum equipamento está associado agora.</p>
+      ) : (
+        <div className="peer-list">
+          {device.wifi_peers.map((peer, index) => (
+            <article
+              className="peer-card"
+              key={`${peer.mac_address || "peer"}-${index}`}
+            >
+              <header className="peer-header">
+                <div>
+                  <strong>{peerName(peer)}</strong>
+                  <span>
+                    {[peer.interface, peer.mac_address].filter(Boolean).join(" · ")}
+                  </span>
+                </div>
+                <span
+                  className={
+                    peer.authorized === false
+                      ? "peer-state peer-state--blocked"
+                      : "peer-state"
+                  }
+                >
+                  {authorizationLabel(peer.authorized)}
+                </span>
+              </header>
+
+              <dl className="peer-metrics">
+                <div>
+                  <dt>Sinal recebido</dt>
+                  <dd>
+                    {peer.signal_dbm !== null
+                      ? `${peer.signal_dbm} dBm`
+                      : "Não informado"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Taxa TX</dt>
+                  <dd>{peer.tx_rate || "Não informada"}</dd>
+                </div>
+                <div>
+                  <dt>Taxa RX</dt>
+                  <dd>{peer.rx_rate || "Não informada"}</dd>
+                </div>
+                <div>
+                  <dt>Tempo conectado</dt>
+                  <dd>{peer.uptime || "Não informado"}</dd>
+                </div>
+              </dl>
+
+              {(peer.band || peer.last_activity) && (
+                <footer className="peer-details">
+                  {peer.band && <span>Banda: {peer.band}</span>}
+                  {peer.last_activity && (
+                    <span>Última atividade: {peer.last_activity}</span>
+                  )}
+                </footer>
+              )}
+            </article>
+          ))}
+        </div>
       )}
     </section>
   );

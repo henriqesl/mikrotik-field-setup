@@ -40,6 +40,25 @@ def test_discover_mikrotik_returns_normalized_device(monkeypatch) -> None:
                     "running": True,
                 }
             ],
+            registration_table_available=True,
+            wifi_peers=[
+                {
+                    "interface": "wifi1",
+                    "mac_address": "11:22:33:44:55:66",
+                    "radio_name": None,
+                    "ssid": "ORION-Link",
+                    "authorized": True,
+                    "signal": "-72",
+                    "signal_dbm": -72,
+                    "tx_rate": "144.1Mbps",
+                    "rx_rate": "120.1Mbps",
+                    "tx_bits_per_second": 12000000,
+                    "rx_bits_per_second": 9000000,
+                    "uptime": "6h24m21s",
+                    "last_activity": "10ms",
+                    "band": "5ghz-ax",
+                }
+            ],
         )
 
     monkeypatch.setattr(mikrotik, "discover_device", fake_discover)
@@ -61,6 +80,25 @@ def test_discover_mikrotik_returns_normalized_device(monkeypatch) -> None:
                 "mac_address": "AA:BB:CC:DD:EE:FF",
                 "disabled": False,
                 "running": True,
+            }
+        ],
+        "registration_table_available": True,
+        "wifi_peers": [
+            {
+                "interface": "wifi1",
+                "mac_address": "11:22:33:44:55:66",
+                "radio_name": None,
+                "ssid": "ORION-Link",
+                "authorized": True,
+                "signal": "-72",
+                "signal_dbm": -72,
+                "tx_rate": "144.1Mbps",
+                "rx_rate": "120.1Mbps",
+                "tx_bits_per_second": 12000000,
+                "rx_bits_per_second": 9000000,
+                "uptime": "6h24m21s",
+                "last_activity": "10ms",
+                "band": "5ghz-ax",
             }
         ],
     }

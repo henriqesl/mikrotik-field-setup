@@ -15,6 +15,31 @@ class MikroTikConnection(BaseModel):
     verify_tls: bool = True
 
 
+class WiFiInterface(BaseModel):
+    name: str | None
+    default_name: str | None
+    mac_address: str | None
+    disabled: bool | None
+    running: bool | None
+
+
+class WiFiPeer(BaseModel):
+    interface: str | None
+    mac_address: str | None
+    radio_name: str | None
+    ssid: str | None
+    authorized: bool | None
+    signal: str | None
+    signal_dbm: int | None
+    tx_rate: str | None
+    rx_rate: str | None
+    tx_bits_per_second: int | None
+    rx_bits_per_second: int | None
+    uptime: str | None
+    last_activity: str | None
+    band: str | None
+
+
 class DeviceSummary(BaseModel):
     identity: str
     model: str | None
@@ -22,12 +47,6 @@ class DeviceSummary(BaseModel):
     architecture: str | None
     wifi_package: str | None
     wifi_stack: Literal["wifi", "wifiwave2", "wireless", "not_detected"]
-    wifi_interfaces: list["WiFiInterface"]
-
-
-class WiFiInterface(BaseModel):
-    name: str | None
-    default_name: str | None
-    mac_address: str | None
-    disabled: bool | None
-    running: bool | None
+    wifi_interfaces: list[WiFiInterface]
+    registration_table_available: bool
+    wifi_peers: list[WiFiPeer]

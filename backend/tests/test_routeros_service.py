@@ -1,5 +1,8 @@
 from types import SimpleNamespace
 
+import pytest
+from routeros.errors import DeviceError
+
 from app.models.mikrotik import MikroTikConnection
 from app.services import routeros as service
 
@@ -35,6 +38,22 @@ class FakeClient:
                     "mac-address": "AA:BB:CC:DD:EE:FF",
                     "disabled": "false",
                     "running": "true",
+                }
+            ],
+            "/interface/wifi/registration-table/print": [
+                {
+                    "interface": "wifi1",
+                    "ssid": "ORION-Link",
+                    "mac-address": "11:22:33:44:55:66",
+                    "authorized": "true",
+                    "signal": "-61",
+                    "tx-rate": "144.1Mbps",
+                    "rx-rate": "120.1Mbps",
+                    "tx-bits-per-second": "12000000",
+                    "rx-bits-per-second": "9000000",
+                    "uptime": "1h20m",
+                    "last-activity": "20ms",
+                    "band": "5ghz-ax",
                 }
             ],
         }
@@ -78,6 +97,11 @@ def test_discover_device_uses_plain_api_and_maps_real_fields(monkeypatch) -> Non
     assert result.wifi_stack == "wifi"
     assert result.wifi_interfaces[0].name == "wifi1"
     assert result.wifi_interfaces[0].running is True
+    assert result.registration_table_available is True
+    assert result.wifi_peers[0].signal == "-61"
+    assert result.wifi_peers[0].signal_dbm == -61
+    assert result.wifi_peers[0].authorized is True
+    assert result.wifi_peers[0].tx_bits_per_second == 12000000
     assert captured == {
         "address": "192.168.88.1:8728",
         "username": "orion",
@@ -89,6 +113,7 @@ def test_discover_device_uses_plain_api_and_maps_real_fields(monkeypatch) -> Non
         "/system/resource/print",
         "/system/package/print",
         "/interface/wifi/print",
+        "/interface/wifi/registration-table/print",
     ]
 
 
@@ -143,6 +168,19 @@ def test_discover_device_falls_back_to_legacy_wireless_menu(monkeypatch) -> None
                         "running": "false",
                     }
                 ]
+            elif command == "/interface/wireless/registration-table/print":
+                rows = [
+                    {
+                        "interface": "wlan1",
+                        "mac-address": "AA:BB:CC:DD:EE:FF",
+                        "radio-name": "AP-Torre",
+                        "signal-strength": "-78dBm@6Mbps",
+                        "tx-rate": "54Mbps",
+                        "rx-rate": "48Mbps",
+                        "uptime": "3h12m",
+                        "last-activity": "30ms",
+                    }
+                ]
             else:
                 raise DeviceError(
                     SimpleNamespace(map={"message": "menu unavailable"})
@@ -167,3 +205,37 @@ def test_discover_device_falls_back_to_legacy_wireless_menu(monkeypatch) -> None
     assert result.wifi_stack == "wireless"
     assert result.wifi_interfaces[0].name == "wlan1"
     assert result.wifi_interfaces[0].running is False
+    assert result.registration_table_available is True
+    assert result.wifi_peers[0].radio_name == "AP-Torre"
+    assert result.wifi_peers[0].signal == "-78dBm@6Mbps"
+    assert result.wifi_peers[0].signal_dbm == -78
+    assert result.wifi_peers[0].authorized is None
+
+
+@pytest.mark.parametrize(
+    ("raw_signal", "expected"),
+    [
+        ("-61", -61),
+        ("-78dBm@6Mbps", -78),
+        (None, None),
+        ("not-informed", None),
+    ],
+)
+def test_signal_dbm_normalization(raw_signal, expected) -> None:
+    assert service._signal_dbm(raw_signal) == expected
+
+
+def test_registration_table_reports_unavailable_menu() -> None:
+    class UnavailableClient:
+        def run(self, _command: str):
+            raise DeviceError(
+                SimpleNamespace(map={"message": "menu unavailable"})
+            )
+
+    available, peers = service._read_registration_table(
+        UnavailableClient(),
+        "wifi",
+    )
+
+    assert available is False
+    assert peers == []
