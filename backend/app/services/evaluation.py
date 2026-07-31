@@ -1,4 +1,28 @@
-from app.models.mikrotik import MetricAssessment
+from app.models.mikrotik import (
+    HealthComponent,
+    LinkHealthAssessment,
+    MetricAssessment,
+    PingResult,
+    WiFiPeer,
+)
+
+
+HEALTH_WEIGHTS = {
+    "packet_loss": 30,
+    "association": 25,
+    "average_latency": 20,
+    "signal": 15,
+    "maximum_latency": 10,
+}
+ASSESSMENT_SCORES = {
+    "excellent": 100,
+    "good": 85,
+    "attention": 65,
+    "weak": 40,
+    "critical": 0,
+    "informational": 85,
+    "unavailable": None,
+}
 
 
 def _assessment(
@@ -178,3 +202,167 @@ def assess_maximum_latency(latency_ms: float | None) -> MetricAssessment:
         "O pico de latência indica instabilidade importante.",
     )
 
+
+def _component(
+    metric: str,
+    label: str,
+    assessment: MetricAssessment,
+    metric_score: int | None = None,
+) -> HealthComponent:
+    score = (
+        ASSESSMENT_SCORES[assessment.status]
+        if metric_score is None
+        else metric_score
+    )
+    weight = HEALTH_WEIGHTS[metric]
+    contribution = 0 if score is None else (score / 100) * weight
+
+    return HealthComponent(
+        metric=metric,
+        label=label,
+        weight=weight,
+        metric_score=score,
+        contribution=round(contribution, 2),
+        assessment=assessment,
+    )
+
+
+def _health_status(
+    score: int,
+    peer: WiFiPeer | None,
+    ping: PingResult,
+) -> tuple[str, str]:
+    if peer is None or peer.authorized is False:
+        return "critical", "Crítico"
+    if ping.packet_loss_percent > 20:
+        return "critical", "Crítico"
+    if (
+        ping.packet_loss_percent > 5
+        or ping.average_latency_assessment.status == "critical"
+        or ping.maximum_latency_assessment.status == "critical"
+    ):
+        return "unstable", "Instável"
+    if score >= 90 and peer.signal_assessment.status in {"excellent", "good"}:
+        return "operational", "Operacional"
+    if score >= 75:
+        return "operational_attention", "Operacional com atenção"
+    if score >= 50:
+        return "unstable", "Instável"
+    return "critical", "Crítico"
+
+
+def _health_text(
+    status: str,
+    peer: WiFiPeer | None,
+    ping: PingResult,
+) -> tuple[str, str]:
+    if peer is None:
+        return (
+            "Não há peer associado, mesmo que o destino de ping possa responder por outra interface.",
+            "Verifique a configuração Wi-Fi, o SSID e a associação com o outro rádio.",
+        )
+    if peer.authorized is False:
+        return (
+            "O peer foi detectado, mas não concluiu a autenticação.",
+            "Confira senha, perfil de segurança e permissões do enlace.",
+        )
+    if ping.packet_loss_percent > 5:
+        return (
+            f"O destino respondeu com {ping.packet_loss_percent:g}% de perda de pacotes.",
+            "Repita o teste e verifique alinhamento, interferência e configuração da bridge.",
+        )
+    if (
+        peer.signal_assessment.status in {"weak", "critical"}
+        and ping.packet_loss_percent == 0
+        and ping.average_latency_assessment.status in {"excellent", "good"}
+    ):
+        return (
+            "O enlace está funcionando sem perda e com baixa latência média, mas o sinal tem pouca margem.",
+            "Otimize o alinhamento quando possível; a comunicação atual está funcional.",
+        )
+    if status == "operational":
+        return (
+            "Associação, perda, latência e sinal estão em faixas adequadas.",
+            "O enlace está operacional; continue com as demais validações de campo.",
+        )
+    if status == "operational_attention":
+        return (
+            "O enlace responde, mas pelo menos um indicador requer atenção.",
+            "Revise os indicadores destacados antes de concluir a instalação.",
+        )
+    if status == "unstable":
+        return (
+            "A comunicação apresenta perda, latência ou margem insuficiente.",
+            "Investigue os indicadores críticos e repita o teste.",
+        )
+    return (
+        "O enlace não possui condições suficientes para uma validação confiável.",
+        "Corrija associação e conectividade antes de continuar.",
+    )
+
+
+def calculate_link_health(
+    peer: WiFiPeer | None,
+    ping: PingResult,
+) -> LinkHealthAssessment:
+    association_assessment = (
+        peer.association_assessment
+        if peer is not None
+        else _assessment(
+            "critical",
+            "Sem associação",
+            "Nenhum peer aparece na registration table.",
+        )
+    )
+    association_score = 0 if peer is None or peer.authorized is False else 100
+    signal_assessment = (
+        peer.signal_assessment
+        if peer is not None
+        else _assessment(
+            "critical",
+            "Sem sinal",
+            "Não há peer associado para medir o sinal.",
+        )
+    )
+    components = [
+        _component(
+            "packet_loss",
+            "Perda de pacotes",
+            ping.packet_loss_assessment,
+        ),
+        _component(
+            "association",
+            "Associação",
+            association_assessment,
+            association_score,
+        ),
+        _component(
+            "average_latency",
+            "Latência média",
+            ping.average_latency_assessment,
+        ),
+        _component("signal", "Sinal", signal_assessment),
+        _component(
+            "maximum_latency",
+            "Latência máxima",
+            ping.maximum_latency_assessment,
+        ),
+    ]
+    available_weight = sum(
+        component.weight
+        for component in components
+        if component.metric_score is not None
+    )
+    contribution = sum(component.contribution for component in components)
+    score = round((contribution / available_weight) * 100) if available_weight else 0
+    status, status_label = _health_status(score, peer, ping)
+    summary, recommendation = _health_text(status, peer, ping)
+
+    return LinkHealthAssessment(
+        score=score,
+        status=status,
+        status_label=status_label,
+        summary=summary,
+        recommendation=recommendation,
+        components=components,
+    )

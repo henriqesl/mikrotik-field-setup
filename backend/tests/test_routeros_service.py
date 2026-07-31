@@ -304,6 +304,16 @@ def test_ping_device_uses_routeros_summary(monkeypatch) -> None:
         "_open_client",
         lambda _connection: PingClient(),
     )
+    monkeypatch.setattr(
+        service,
+        "_read_wifi",
+        lambda _client: (None, "wifi", []),
+    )
+    monkeypatch.setattr(
+        service,
+        "_read_registration_table",
+        lambda _client, _stack: (False, []),
+    )
     request = PingRequest(
         connection=MikroTikConnection(
             host="192.168.88.1",
@@ -348,6 +358,16 @@ def test_ping_device_calculates_fallback_when_summary_is_missing(
         service,
         "_open_client",
         lambda _connection: PingClient(),
+    )
+    monkeypatch.setattr(
+        service,
+        "_read_wifi",
+        lambda _client: (None, "wifi", []),
+    )
+    monkeypatch.setattr(
+        service,
+        "_read_registration_table",
+        lambda _client, _stack: (False, []),
     )
     request = PingRequest(
         connection=MikroTikConnection(

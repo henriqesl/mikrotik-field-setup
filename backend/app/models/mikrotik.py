@@ -76,6 +76,35 @@ class PingRequest(BaseModel):
     count: int = Field(default=5, ge=1, le=10)
 
 
+class HealthComponent(BaseModel):
+    metric: Literal[
+        "packet_loss",
+        "association",
+        "average_latency",
+        "signal",
+        "maximum_latency",
+    ]
+    label: str
+    weight: int
+    metric_score: int | None
+    contribution: float
+    assessment: MetricAssessment
+
+
+class LinkHealthAssessment(BaseModel):
+    score: int
+    status: Literal[
+        "operational",
+        "operational_attention",
+        "unstable",
+        "critical",
+    ]
+    status_label: str
+    summary: str
+    recommendation: str
+    components: list[HealthComponent]
+
+
 class PingResult(BaseModel):
     target: IPv4Address
     sent: int
@@ -89,3 +118,5 @@ class PingResult(BaseModel):
     packet_loss_assessment: MetricAssessment
     average_latency_assessment: MetricAssessment
     maximum_latency_assessment: MetricAssessment
+    link_health: LinkHealthAssessment | None = None
+    link_health_unavailable_reason: str | None = None

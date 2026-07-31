@@ -13,6 +13,7 @@ from app.services.evaluation import (
     assess_maximum_latency,
     assess_packet_loss,
     assess_signal,
+    calculate_link_health,
 )
 from app.models.mikrotik import (
     DeviceSummary,
@@ -403,7 +404,31 @@ def _read_ping_result(client: Any, request: PingRequest) -> PingResult:
 
 def ping_device(request: PingRequest) -> PingResult:
     """Run a bounded ICMP test from the MikroTik itself."""
-    return _with_connection(
-        request.connection,
-        lambda client: _read_ping_result(client, request),
-    )
+    def run_diagnostics(client: Any) -> PingResult:
+        result = _read_ping_result(client, request)
+        _package, stack, _interfaces = _read_wifi(client)
+        table_available, peers = _read_registration_table(client, stack)
+
+        if not table_available:
+            return result.model_copy(
+                update={
+                    "link_health_unavailable_reason": (
+                        "A registration table não está disponível para calcular a saúde do enlace."
+                    )
+                }
+            )
+        if len(peers) > 1:
+            return result.model_copy(
+                update={
+                    "link_health_unavailable_reason": (
+                        "Há mais de um peer associado; a seleção do enlace ainda não está disponível."
+                    )
+                }
+            )
+
+        peer = peers[0] if peers else None
+        return result.model_copy(
+            update={"link_health": calculate_link_health(peer, result)}
+        )
+
+    return _with_connection(request.connection, run_diagnostics)

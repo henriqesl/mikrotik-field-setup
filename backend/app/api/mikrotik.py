@@ -69,7 +69,11 @@ def discover_mikrotik(connection: MikroTikConnection) -> DeviceSummary:
         raise _friendly_http_error(error) from error
 
 
-@router.post("/ping", response_model=PingResult)
+@router.post(
+    "/ping",
+    response_model=PingResult,
+    response_model_exclude_none=True,
+)
 def ping_from_mikrotik(request: PingRequest) -> PingResult:
     """Run a short ICMP test from the connected MikroTik."""
     try:

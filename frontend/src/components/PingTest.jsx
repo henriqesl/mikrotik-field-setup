@@ -81,6 +81,48 @@ function PingTest({ connection }) {
             </span>
           </header>
 
+          {result.link_health ? (
+            <section className="health-panel" aria-labelledby="health-title">
+              <div className="health-score">
+                <strong>{result.link_health.score}</strong>
+                <span>/100</span>
+              </div>
+              <div className="health-content">
+                <p>Saúde do enlace</p>
+                <h3 id="health-title">{result.link_health.status_label}</h3>
+                <p>{result.link_health.summary}</p>
+                <div className="health-recommendation">
+                  <strong>Recomendação</strong>
+                  <span>{result.link_health.recommendation}</span>
+                </div>
+
+                <details className="health-details">
+                  <summary>Como a nota foi calculada</summary>
+                  <div className="health-components">
+                    {result.link_health.components.map((component) => (
+                      <div key={component.metric}>
+                        <div>
+                          <strong>{component.label}</strong>
+                          <span>Peso {component.weight}%</span>
+                        </div>
+                        <AssessmentBadge assessment={component.assessment} />
+                        <span className="component-score">
+                          {component.metric_score === null
+                            ? "Sem dado"
+                            : `${component.metric_score}/100`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              </div>
+            </section>
+          ) : result.link_health_unavailable_reason ? (
+            <p className="health-unavailable">
+              Nota geral indisponível: {result.link_health_unavailable_reason}
+            </p>
+          ) : null}
+
           <dl className="ping-metrics">
             <div>
               <dt>Perda</dt>
