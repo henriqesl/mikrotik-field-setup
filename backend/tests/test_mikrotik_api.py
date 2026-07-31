@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 
 from app.api import mikrotik
 from app.main import app
-from app.models.mikrotik import DeviceSummary
+from app.models.mikrotik import DeviceSummary, PingResult
 from app.services.routeros import (
     MikroTikAuthenticationError,
     MikroTikConnectionError,
@@ -145,5 +145,57 @@ def test_discover_mikrotik_rejects_invalid_ip() -> None:
     invalid_connection = {**VALID_CONNECTION, "host": "mikrotik.local"}
 
     response = client.post("/api/mikrotik/discover", json=invalid_connection)
+
+    assert response.status_code == 422
+
+
+def test_ping_from_mikrotik_returns_normalized_metrics(monkeypatch) -> None:
+    def fake_ping(_request):
+        return PingResult(
+            target="10.0.0.2",
+            sent=5,
+            received=4,
+            packet_loss_percent=20,
+            minimum_latency_ms=1.2,
+            average_latency_ms=3.4,
+            maximum_latency_ms=8.7,
+            samples_ms=[1.2, 2.4, 3.3, 8.7],
+            measurement_source="routeros_summary",
+        )
+
+    monkeypatch.setattr(mikrotik, "ping_device", fake_ping)
+
+    response = client.post(
+        "/api/mikrotik/ping",
+        json={
+            "connection": VALID_CONNECTION,
+            "target": "10.0.0.2",
+            "count": 5,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "target": "10.0.0.2",
+        "sent": 5,
+        "received": 4,
+        "packet_loss_percent": 20.0,
+        "minimum_latency_ms": 1.2,
+        "average_latency_ms": 3.4,
+        "maximum_latency_ms": 8.7,
+        "samples_ms": [1.2, 2.4, 3.3, 8.7],
+        "measurement_source": "routeros_summary",
+    }
+    assert "field-secret" not in response.text
+
+
+def test_ping_from_mikrotik_rejects_invalid_target() -> None:
+    response = client.post(
+        "/api/mikrotik/ping",
+        json={
+            "connection": VALID_CONNECTION,
+            "target": "internet.example",
+        },
+    )
 
     assert response.status_code == 422

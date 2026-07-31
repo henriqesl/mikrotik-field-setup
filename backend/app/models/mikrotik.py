@@ -50,3 +50,23 @@ class DeviceSummary(BaseModel):
     wifi_interfaces: list[WiFiInterface]
     registration_table_available: bool
     wifi_peers: list[WiFiPeer]
+
+
+class PingRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    connection: MikroTikConnection
+    target: IPv4Address
+    count: int = Field(default=5, ge=1, le=10)
+
+
+class PingResult(BaseModel):
+    target: IPv4Address
+    sent: int
+    received: int
+    packet_loss_percent: float
+    minimum_latency_ms: float | None
+    average_latency_ms: float | None
+    maximum_latency_ms: float | None
+    samples_ms: list[float]
+    measurement_source: Literal["routeros_summary", "orion_calculation"]

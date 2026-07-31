@@ -101,12 +101,20 @@ h2 {
 }
 
 .connection-form,
-.device-card {
+.device-card,
+.diagnostic-card {
   padding: 2rem;
   border: 1px solid #1e3a5f;
   border-radius: 1.25rem;
   background: rgb(15 23 42 / 88%);
   box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 25%);
+}
+
+.section-description {
+  max-width: 34rem;
+  margin: 0.45rem 0 0;
+  color: #64748b;
+  font-size: 0.82rem;
 }
 
 .section-heading {
@@ -530,6 +538,109 @@ h2 {
   font-size: 0.7rem;
 }
 
+.ping-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.ping-form .primary-button {
+  margin-top: 0;
+}
+
+.inline-error {
+  margin-top: 1rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid rgb(251 113 133 / 35%);
+  border-radius: 0.65rem;
+  color: #fda4af;
+  background: rgb(159 18 57 / 14%);
+  font-size: 0.82rem;
+}
+
+.ping-result {
+  overflow: hidden;
+  margin-top: 1rem;
+  border: 1px solid #25354d;
+  border-radius: 0.8rem;
+  background: #0b1220;
+}
+
+.ping-result > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid #1e293b;
+}
+
+.ping-result > header > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.ping-result > header > div span {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.ping-result > header strong {
+  color: #f8fafc;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.ping-state {
+  color: #fb7185;
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.ping-state--reachable {
+  color: #4ade80;
+}
+
+.ping-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+}
+
+.ping-metrics > div {
+  padding: 1rem;
+  border-right: 1px solid #1e293b;
+}
+
+.ping-metrics > div:last-child {
+  border-right: 0;
+}
+
+.ping-metrics dt {
+  margin-bottom: 0.3rem;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.ping-metrics dd {
+  margin: 0;
+  color: #e2e8f0;
+  font-size: 0.95rem;
+  font-weight: 750;
+}
+
+.measurement-source {
+  margin: 0;
+  padding: 0.65rem 1rem;
+  border-top: 1px solid #1e293b;
+  color: #64748b;
+  font-size: 0.7rem;
+}
+
 @media (max-width: 680px) {
   .page {
     padding: 3rem 0;
@@ -587,5 +698,21 @@ h2 {
   .peer-details {
     flex-direction: column;
     gap: 0.25rem;
+  }
+
+  .ping-form {
+    grid-template-columns: 1fr;
+  }
+
+  .ping-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ping-metrics > div:nth-child(2) {
+    border-right: 0;
+  }
+
+  .ping-metrics > div:nth-child(-n + 2) {
+    border-bottom: 1px solid #1e293b;
   }
 }

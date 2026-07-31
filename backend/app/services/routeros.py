@@ -1,8 +1,8 @@
 import re
 import socket
 import ssl
-from collections.abc import Mapping
-from typing import Any
+from collections.abc import Callable, Mapping
+from typing import Any, TypeVar
 
 import routeros
 from routeros.errors import DeviceError, LoginError, RouterOSError
@@ -10,6 +10,8 @@ from routeros.errors import DeviceError, LoginError, RouterOSError
 from app.models.mikrotik import (
     DeviceSummary,
     MikroTikConnection,
+    PingRequest,
+    PingResult,
     WiFiInterface,
     WiFiPeer,
 )
@@ -27,6 +29,16 @@ REGISTRATION_MENUS = {
     "wifiwave2": "/interface/wifiwave2/registration-table/print",
     "wireless": "/interface/wireless/registration-table/print",
 }
+TIME_FACTORS_MS = {
+    "d": 86_400_000,
+    "h": 3_600_000,
+    "m": 60_000,
+    "s": 1_000,
+    "ms": 1,
+    "us": 0.001,
+    "ns": 0.000001,
+}
+ResultType = TypeVar("ResultType")
 
 
 class MikroTikError(Exception):
@@ -97,6 +109,38 @@ def _signal_dbm(value: str | None) -> int | None:
 
     match = re.search(r"-?\d+", value)
     return int(match.group()) if match else None
+
+
+def _duration_ms(value: str | None) -> float | None:
+    if not value:
+        return None
+
+    normalized = value.strip().lower().replace("µs", "us")
+    matches = list(
+        re.finditer(
+            r"(\d+(?:\.\d+)?)(ms|us|ns|d|h|m|s)",
+            normalized,
+        )
+    )
+
+    if not matches or "".join(match.group(0) for match in matches) != normalized:
+        return None
+
+    milliseconds = sum(
+        float(match.group(1)) * TIME_FACTORS_MS[match.group(2)]
+        for match in matches
+    )
+    return round(milliseconds, 3)
+
+
+def _packet_loss(value: str | None) -> float | None:
+    if value is None:
+        return None
+
+    try:
+        return float(value.rstrip("%"))
+    except ValueError:
+        return None
 
 
 def _active_wifi_package(client: Any) -> str | None:
@@ -223,30 +267,35 @@ def _read_device_summary(client: Any) -> DeviceSummary:
     )
 
 
-def discover_device(connection: MikroTikConnection) -> DeviceSummary:
-    """Open one short-lived API session and read basic RouterOS information."""
+def _open_client(connection: MikroTikConnection) -> Any:
     address = f"{connection.host}:{connection.port}"
     password = connection.password.get_secret_value()
 
-    try:
-        if connection.use_tls:
-            client = routeros.dial_tls(
-                address,
-                connection.username,
-                password,
-                timeout=CONNECTION_TIMEOUT_SECONDS,
-                tls_context=_create_tls_context(connection.verify_tls),
-            )
-        else:
-            client = routeros.dial(
-                address,
-                connection.username,
-                password,
-                timeout=CONNECTION_TIMEOUT_SECONDS,
-            )
+    if connection.use_tls:
+        return routeros.dial_tls(
+            address,
+            connection.username,
+            password,
+            timeout=CONNECTION_TIMEOUT_SECONDS,
+            tls_context=_create_tls_context(connection.verify_tls),
+        )
 
+    return routeros.dial(
+        address,
+        connection.username,
+        password,
+        timeout=CONNECTION_TIMEOUT_SECONDS,
+    )
+
+
+def _with_connection(
+    connection: MikroTikConnection,
+    operation: Callable[[Any], ResultType],
+) -> ResultType:
+    try:
+        client = _open_client(connection)
         with client:
-            return _read_device_summary(client)
+            return operation(client)
     except MikroTikResponseError:
         raise
     except LoginError as error:
@@ -259,3 +308,76 @@ def discover_device(connection: MikroTikConnection) -> DeviceSummary:
         raise MikroTikResponseError from error
     except OSError as error:
         raise MikroTikConnectionError from error
+
+
+def discover_device(connection: MikroTikConnection) -> DeviceSummary:
+    """Open one short-lived API session and read RouterOS device information."""
+    return _with_connection(connection, _read_device_summary)
+
+
+def _read_ping_result(client: Any, request: PingRequest) -> PingResult:
+    rows = _rows(
+        client.run(
+            "/ping",
+            f"=address={request.target}",
+            f"=count={request.count}",
+            "=interval=200ms",
+        )
+    )
+    samples = [
+        latency
+        for latency in (_duration_ms(row.get("time")) for row in rows)
+        if latency is not None
+    ]
+    summary = next(
+        (
+            row
+            for row in reversed(rows)
+            if row.get("sent") is not None and row.get("received") is not None
+        ),
+        None,
+    )
+
+    if summary:
+        sent = _optional_int(summary.get("sent"))
+        received = _optional_int(summary.get("received"))
+        packet_loss = _packet_loss(summary.get("packet-loss"))
+
+        if sent is not None and received is not None and packet_loss is not None:
+            return PingResult(
+                target=request.target,
+                sent=sent,
+                received=received,
+                packet_loss_percent=packet_loss,
+                minimum_latency_ms=_duration_ms(summary.get("min-rtt")),
+                average_latency_ms=_duration_ms(summary.get("avg-rtt")),
+                maximum_latency_ms=_duration_ms(summary.get("max-rtt")),
+                samples_ms=samples,
+                measurement_source="routeros_summary",
+            )
+
+    sent = request.count
+    received = len(samples)
+    packet_loss = ((sent - received) / sent) * 100
+
+    return PingResult(
+        target=request.target,
+        sent=sent,
+        received=received,
+        packet_loss_percent=round(packet_loss, 2),
+        minimum_latency_ms=min(samples) if samples else None,
+        average_latency_ms=(
+            round(sum(samples) / received, 3) if received else None
+        ),
+        maximum_latency_ms=max(samples) if samples else None,
+        samples_ms=samples,
+        measurement_source="orion_calculation",
+    )
+
+
+def ping_device(request: PingRequest) -> PingResult:
+    """Run a bounded ICMP test from the MikroTik itself."""
+    return _with_connection(
+        request.connection,
+        lambda client: _read_ping_result(client, request),
+    )

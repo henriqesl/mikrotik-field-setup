@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import pytest
 from routeros.errors import DeviceError
 
-from app.models.mikrotik import MikroTikConnection
+from app.models.mikrotik import MikroTikConnection, PingRequest
 from app.services import routeros as service
 
 
@@ -239,3 +239,130 @@ def test_registration_table_reports_unavailable_menu() -> None:
 
     assert available is False
     assert peers == []
+
+
+@pytest.mark.parametrize(
+    ("routeros_duration", "expected_ms"),
+    [
+        ("453us", 0.453),
+        ("3ms200us", 3.2),
+        ("1s20ms", 1020.0),
+        ("0ms", 0.0),
+        (None, None),
+    ],
+)
+def test_routeros_duration_normalization(
+    routeros_duration,
+    expected_ms,
+) -> None:
+    assert service._duration_ms(routeros_duration) == expected_ms
+
+
+def test_ping_device_uses_routeros_summary(monkeypatch) -> None:
+    class PingClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args) -> None:
+            return None
+
+        def run(self, *words):
+            assert words == (
+                "/ping",
+                "=address=10.0.0.2",
+                "=count=5",
+                "=interval=200ms",
+            )
+            rows = [
+                {
+                    "seq": "0",
+                    "time": "1ms200us",
+                    "sent": "1",
+                    "received": "1",
+                    "packet-loss": "0",
+                    "min-rtt": "1ms200us",
+                    "avg-rtt": "1ms200us",
+                    "max-rtt": "1ms200us",
+                },
+                {
+                    "seq": "1",
+                    "time": "4ms",
+                    "sent": "5",
+                    "received": "4",
+                    "packet-loss": "20",
+                    "min-rtt": "1ms200us",
+                    "avg-rtt": "2ms500us",
+                    "max-rtt": "4ms",
+                },
+            ]
+            return SimpleNamespace(
+                re=[SimpleNamespace(map=row) for row in rows],
+            )
+
+    monkeypatch.setattr(
+        service,
+        "_open_client",
+        lambda _connection: PingClient(),
+    )
+    request = PingRequest(
+        connection=MikroTikConnection(
+            host="192.168.88.1",
+            username="orion",
+            password="secret",
+        ),
+        target="10.0.0.2",
+    )
+
+    result = service.ping_device(request)
+
+    assert result.sent == 5
+    assert result.received == 4
+    assert result.packet_loss_percent == 20
+    assert result.minimum_latency_ms == 1.2
+    assert result.average_latency_ms == 2.5
+    assert result.maximum_latency_ms == 4
+    assert result.samples_ms == [1.2, 4.0]
+    assert result.measurement_source == "routeros_summary"
+
+
+def test_ping_device_calculates_fallback_when_summary_is_missing(
+    monkeypatch,
+) -> None:
+    class PingClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args) -> None:
+            return None
+
+        def run(self, *_words):
+            return SimpleNamespace(
+                re=[
+                    SimpleNamespace(map={"time": "2ms"}),
+                    SimpleNamespace(map={"status": "timeout"}),
+                    SimpleNamespace(map={"time": "4ms"}),
+                ]
+            )
+
+    monkeypatch.setattr(
+        service,
+        "_open_client",
+        lambda _connection: PingClient(),
+    )
+    request = PingRequest(
+        connection=MikroTikConnection(
+            host="192.168.88.1",
+            username="orion",
+            password="secret",
+        ),
+        target="10.0.0.2",
+        count=3,
+    )
+
+    result = service.ping_device(request)
+
+    assert result.sent == 3
+    assert result.received == 2
+    assert result.packet_loss_percent == 33.33
+    assert result.average_latency_ms == 3
+    assert result.measurement_source == "orion_calculation"

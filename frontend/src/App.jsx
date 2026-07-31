@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import ConnectionForm from "./components/ConnectionForm.jsx";
 import DeviceSummary from "./components/DeviceSummary.jsx";
+import PingTest from "./components/PingTest.jsx";
 import { discoverDevice } from "./services/api.js";
 
 const API_STATES = {
@@ -22,6 +23,7 @@ const API_STATES = {
 function App() {
   const [apiState, setApiState] = useState("checking");
   const [device, setDevice] = useState(null);
+  const [activeConnection, setActiveConnection] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -54,10 +56,12 @@ function App() {
     setIsLoading(true);
     setErrorMessage("");
     setDevice(null);
+    setActiveConnection(null);
 
     try {
       const discoveredDevice = await discoverDevice(connection);
       setDevice(discoveredDevice);
+      setActiveConnection(connection);
       return true;
     } catch (error) {
       setErrorMessage(error.message);
@@ -99,6 +103,9 @@ function App() {
         )}
 
         {device && <DeviceSummary device={device} />}
+        {device && activeConnection && (
+          <PingTest connection={activeConnection} />
+        )}
       </section>
     </main>
   );

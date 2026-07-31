@@ -1,13 +1,13 @@
-export async function discoverDevice(connection) {
+async function postJson(path, body) {
   let response;
 
   try {
-    response = await fetch("/api/mikrotik/discover", {
+    response = await fetch(path, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(connection),
+      body: JSON.stringify(body),
     });
   } catch {
     throw new Error(
@@ -25,4 +25,16 @@ export async function discoverDevice(connection) {
   }
 
   return data;
+}
+
+export function discoverDevice(connection) {
+  return postJson("/api/mikrotik/discover", connection);
+}
+
+export function runPing(connection, target) {
+  return postJson("/api/mikrotik/ping", {
+    connection,
+    target,
+    count: 5,
+  });
 }
