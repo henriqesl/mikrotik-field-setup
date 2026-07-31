@@ -69,6 +69,12 @@ def test_discover_mikrotik_returns_normalized_device(monkeypatch) -> None:
                     },
                 }
             ],
+            ethernet_interfaces=[],
+            bridges=[],
+            bridge_ports=[],
+            ip_addresses=[],
+            default_routes=[],
+            structural_diagnostic={"checks": []},
         )
 
     monkeypatch.setattr(mikrotik, "discover_device", fake_discover)
@@ -121,6 +127,12 @@ def test_discover_mikrotik_returns_normalized_device(monkeypatch) -> None:
                 },
             }
         ],
+        "ethernet_interfaces": [],
+        "bridges": [],
+        "bridge_ports": [],
+        "ip_addresses": [],
+        "default_routes": [],
+        "structural_diagnostic": {"checks": []},
     }
     assert "field-secret" not in response.text
 

@@ -584,6 +584,89 @@ h2 {
   font-size: 0.7rem;
 }
 
+.diagnostic-heading {
+  padding-top: 1.2rem;
+  border-top: 1px solid #1e293b;
+}
+
+.diagnostic-count {
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.diagnostic-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.diagnostic-item {
+  padding: 0.9rem 1rem;
+  border: 1px solid #334155;
+  border-left: 3px solid #64748b;
+  border-radius: 0.75rem;
+  background: #0b1220;
+}
+
+.diagnostic-item--passed {
+  border-left-color: #22c55e;
+}
+
+.diagnostic-item--warning {
+  border-left-color: #eab308;
+}
+
+.diagnostic-item--failed {
+  border-left-color: #f43f5e;
+}
+
+.diagnostic-item__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.diagnostic-item__header strong {
+  color: #f8fafc;
+  font-size: 0.86rem;
+}
+
+.diagnostic-item__header span {
+  color: #94a3b8;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.diagnostic-item--passed .diagnostic-item__header span {
+  color: #4ade80;
+}
+
+.diagnostic-item--warning .diagnostic-item__header span {
+  color: #facc15;
+}
+
+.diagnostic-item--failed .diagnostic-item__header span {
+  color: #fb7185;
+}
+
+.diagnostic-item p {
+  margin: 0.45rem 0 0;
+  color: #cbd5e1;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.diagnostic-item small {
+  display: block;
+  margin-top: 0.4rem;
+  color: #64748b;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
 .ping-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -852,6 +935,10 @@ h2 {
 
   .wifi-meta {
     flex-wrap: wrap;
+  }
+
+  .diagnostic-list {
+    grid-template-columns: 1fr;
   }
 
   .peer-header {

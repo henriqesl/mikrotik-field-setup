@@ -14,6 +14,13 @@ const STACK_LABELS = {
   not_detected: "Não detectado",
 };
 
+const DIAGNOSTIC_LABELS = {
+  passed: "Tudo certo",
+  warning: "Atenção",
+  failed: "Verificar",
+  unavailable: "Não avaliado",
+};
+
 function interfaceStatus(wifiInterface) {
   if (wifiInterface.disabled === true) {
     return "Desativada";
@@ -167,6 +174,34 @@ function DeviceSummary({ device }) {
           ))}
         </div>
       )}
+
+      <div className="wifi-heading diagnostic-heading">
+        <div>
+          <p className="card-kicker">Diagnóstico estrutural</p>
+          <h3>Caminho do enlace</h3>
+        </div>
+        <span className="diagnostic-count">
+          {device.structural_diagnostic.checks.length} verificações
+        </span>
+      </div>
+
+      <div className="diagnostic-list">
+        {device.structural_diagnostic.checks.map((check) => (
+          <article
+            className={`diagnostic-item diagnostic-item--${check.status}`}
+            key={check.key}
+          >
+            <div className="diagnostic-item__header">
+              <strong>{check.label}</strong>
+              <span>{DIAGNOSTIC_LABELS[check.status]}</span>
+            </div>
+            <p>{check.summary}</p>
+            {check.possible_causes.length > 0 && (
+              <small>{check.possible_causes.join(" ")}</small>
+            )}
+          </article>
+        ))}
+      </div>
     </section>
   );
 }

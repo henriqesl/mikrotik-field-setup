@@ -56,6 +56,47 @@ class FakeClient:
                     "band": "5ghz-ax",
                 }
             ],
+            "/interface/ethernet/print": [
+                {
+                    "name": "ether1",
+                    "mac-address": "AA:BB:CC:DD:EE:01",
+                    "disabled": "false",
+                    "running": "true",
+                }
+            ],
+            "/interface/bridge/print": [
+                {
+                    "name": "bridge1",
+                    "disabled": "false",
+                    "running": "true",
+                    "protocol-mode": "rstp",
+                }
+            ],
+            "/interface/bridge/port/print": [
+                {"interface": "wifi1", "bridge": "bridge1", "disabled": "false"},
+                {"interface": "ether1", "bridge": "bridge1", "disabled": "false"},
+            ],
+            "/ip/address/print": [
+                {
+                    "address": "192.168.88.1/24",
+                    "network": "192.168.88.0",
+                    "interface": "bridge1",
+                    "actual-interface": "bridge1",
+                    "disabled": "false",
+                    "invalid": "false",
+                }
+            ],
+            "/ip/route/print": [
+                {
+                    "dst-address": "0.0.0.0/0",
+                    "gateway": "192.168.88.254",
+                    "immediate-gw": "192.168.88.254%bridge1",
+                    "routing-table": "main",
+                    "active": "true",
+                    "disabled": "false",
+                    "distance": "1",
+                }
+            ],
         }
         command_rows = rows[command]
 
@@ -102,6 +143,15 @@ def test_discover_device_uses_plain_api_and_maps_real_fields(monkeypatch) -> Non
     assert result.wifi_peers[0].signal_dbm == -61
     assert result.wifi_peers[0].authorized is True
     assert result.wifi_peers[0].tx_bits_per_second == 12000000
+    assert result.ethernet_interfaces[0].name == "ether1"
+    assert result.bridges[0].name == "bridge1"
+    assert result.bridge_ports[0].interface == "wifi1"
+    assert result.ip_addresses[0].actual_interface == "bridge1"
+    assert result.default_routes[0].active is True
+    assert all(
+        check.status == "passed"
+        for check in result.structural_diagnostic.checks
+    )
     assert captured == {
         "address": "192.168.88.1:8728",
         "username": "orion",
@@ -114,6 +164,11 @@ def test_discover_device_uses_plain_api_and_maps_real_fields(monkeypatch) -> Non
         "/system/package/print",
         "/interface/wifi/print",
         "/interface/wifi/registration-table/print",
+        "/interface/ethernet/print",
+        "/interface/bridge/print",
+        "/interface/bridge/port/print",
+        "/ip/address/print",
+        "/ip/route/print",
     ]
 
 
@@ -210,6 +265,60 @@ def test_discover_device_falls_back_to_legacy_wireless_menu(monkeypatch) -> None
     assert result.wifi_peers[0].signal == "-78dBm@6Mbps"
     assert result.wifi_peers[0].signal_dbm == -78
     assert result.wifi_peers[0].authorized is None
+    assert all(
+        check.status == "unavailable"
+        for check in result.structural_diagnostic.checks[2:]
+    )
+
+
+def test_structural_diagnostic_explains_incomplete_bridge_without_rejecting_l2() -> None:
+    diagnostic = service._structural_diagnostic(
+        wifi_interfaces=[
+            service.WiFiInterface(
+                name="wifi1",
+                default_name="wifi1",
+                mac_address=None,
+                disabled=False,
+                running=True,
+            )
+        ],
+        registration_table_available=True,
+        wifi_peers=[],
+        ethernet_available=True,
+        ethernet_interfaces=[
+            service.EthernetInterface(
+                name="ether1", mac_address=None, disabled=False, running=True
+            )
+        ],
+        bridge_available=True,
+        bridges=[
+            service.BridgeInfo(
+                name="bridge1", disabled=False, running=True, protocol_mode="rstp"
+            )
+        ],
+        bridge_ports_available=True,
+        bridge_ports=[
+            service.BridgePort(
+                interface="wifi1",
+                bridge="bridge1",
+                disabled=False,
+                inactive=False,
+                hw_offload=None,
+            )
+        ],
+        ip_available=True,
+        ip_addresses=[],
+        routes_available=True,
+        default_routes=[],
+    )
+
+    checks = {check.key: check for check in diagnostic.checks}
+    assert checks["association"].status == "failed"
+    assert checks["wifi_bridge"].status == "passed"
+    assert checks["ethernet_bridge"].status == "failed"
+    assert checks["management_ip"].status == "warning"
+    assert checks["default_route"].status == "warning"
+    assert "camada 2" in checks["default_route"].possible_causes[0]
 
 
 @pytest.mark.parametrize(

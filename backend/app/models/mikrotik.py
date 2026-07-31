@@ -23,6 +23,60 @@ class WiFiInterface(BaseModel):
     running: bool | None
 
 
+class EthernetInterface(BaseModel):
+    name: str | None
+    mac_address: str | None
+    disabled: bool | None
+    running: bool | None
+
+
+class BridgeInfo(BaseModel):
+    name: str | None
+    disabled: bool | None
+    running: bool | None
+    protocol_mode: str | None
+
+
+class BridgePort(BaseModel):
+    interface: str | None
+    bridge: str | None
+    disabled: bool | None
+    inactive: bool | None
+    hw_offload: bool | None
+
+
+class IPAddressInfo(BaseModel):
+    address: str | None
+    network: str | None
+    interface: str | None
+    actual_interface: str | None
+    disabled: bool | None
+    dynamic: bool | None
+    invalid: bool | None
+
+
+class DefaultRouteInfo(BaseModel):
+    gateway: str | None
+    immediate_gateway: str | None
+    routing_table: str | None
+    active: bool | None
+    disabled: bool | None
+    dynamic: bool | None
+    distance: int | None
+
+
+class DiagnosticCheck(BaseModel):
+    key: str
+    label: str
+    status: Literal["passed", "warning", "failed", "unavailable"]
+    summary: str
+    possible_causes: list[str] = Field(default_factory=list)
+
+
+class StructuralDiagnostic(BaseModel):
+    checks: list[DiagnosticCheck]
+
+
 class MetricAssessment(BaseModel):
     status: Literal[
         "excellent",
@@ -66,6 +120,12 @@ class DeviceSummary(BaseModel):
     wifi_interfaces: list[WiFiInterface]
     registration_table_available: bool
     wifi_peers: list[WiFiPeer]
+    ethernet_interfaces: list[EthernetInterface]
+    bridges: list[BridgeInfo]
+    bridge_ports: list[BridgePort]
+    ip_addresses: list[IPAddressInfo]
+    default_routes: list[DefaultRouteInfo]
+    structural_diagnostic: StructuralDiagnostic
 
 
 class PingRequest(BaseModel):
