@@ -1,3 +1,5 @@
+import AssessmentBadge from "./AssessmentBadge.jsx";
+
 const DEVICE_FIELDS = [
   ["Identidade", "identity"],
   ["Modelo", "model"],
@@ -26,18 +28,6 @@ function interfaceStatus(wifiInterface) {
   }
 
   return "Estado não informado";
-}
-
-function authorizationLabel(authorized) {
-  if (authorized === true) {
-    return "Autorizado";
-  }
-
-  if (authorized === false) {
-    return "Não autorizado";
-  }
-
-  return "Registrado";
 }
 
 function peerName(peer) {
@@ -135,15 +125,7 @@ function DeviceSummary({ device }) {
                     {[peer.interface, peer.mac_address].filter(Boolean).join(" · ")}
                   </span>
                 </div>
-                <span
-                  className={
-                    peer.authorized === false
-                      ? "peer-state peer-state--blocked"
-                      : "peer-state"
-                  }
-                >
-                  {authorizationLabel(peer.authorized)}
-                </span>
+                <AssessmentBadge assessment={peer.association_assessment} />
               </header>
 
               <dl className="peer-metrics">
@@ -154,6 +136,10 @@ function DeviceSummary({ device }) {
                       ? `${peer.signal_dbm} dBm`
                       : "Não informado"}
                   </dd>
+                  <div className="metric-assessment">
+                    <AssessmentBadge assessment={peer.signal_assessment} />
+                    <small>{peer.signal_assessment.explanation}</small>
+                  </div>
                 </div>
                 <div>
                   <dt>Taxa TX</dt>

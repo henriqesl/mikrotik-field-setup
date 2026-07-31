@@ -57,6 +57,16 @@ def test_discover_mikrotik_returns_normalized_device(monkeypatch) -> None:
                     "uptime": "6h24m21s",
                     "last_activity": "10ms",
                     "band": "5ghz-ax",
+                    "signal_assessment": {
+                        "status": "good",
+                        "label": "Bom",
+                        "explanation": "O nível de sinal está adequado.",
+                    },
+                    "association_assessment": {
+                        "status": "good",
+                        "label": "Autorizado",
+                        "explanation": "O peer concluiu a autenticação.",
+                    },
                 }
             ],
         )
@@ -99,6 +109,16 @@ def test_discover_mikrotik_returns_normalized_device(monkeypatch) -> None:
                 "uptime": "6h24m21s",
                 "last_activity": "10ms",
                 "band": "5ghz-ax",
+                "signal_assessment": {
+                    "status": "good",
+                    "label": "Bom",
+                    "explanation": "O nível de sinal está adequado.",
+                },
+                "association_assessment": {
+                    "status": "good",
+                    "label": "Autorizado",
+                    "explanation": "O peer concluiu a autenticação.",
+                },
             }
         ],
     }
@@ -161,6 +181,21 @@ def test_ping_from_mikrotik_returns_normalized_metrics(monkeypatch) -> None:
             maximum_latency_ms=8.7,
             samples_ms=[1.2, 2.4, 3.3, 8.7],
             measurement_source="routeros_summary",
+            packet_loss_assessment={
+                "status": "weak",
+                "label": "Instável",
+                "explanation": "A perda compromete a estabilidade; repita e investigue.",
+            },
+            average_latency_assessment={
+                "status": "excellent",
+                "label": "Excelente",
+                "explanation": "A latência média está muito baixa.",
+            },
+            maximum_latency_assessment={
+                "status": "excellent",
+                "label": "Excelente",
+                "explanation": "Não foram observados picos relevantes.",
+            },
         )
 
     monkeypatch.setattr(mikrotik, "ping_device", fake_ping)
@@ -185,6 +220,21 @@ def test_ping_from_mikrotik_returns_normalized_metrics(monkeypatch) -> None:
         "maximum_latency_ms": 8.7,
         "samples_ms": [1.2, 2.4, 3.3, 8.7],
         "measurement_source": "routeros_summary",
+        "packet_loss_assessment": {
+            "status": "weak",
+            "label": "Instável",
+            "explanation": "A perda compromete a estabilidade; repita e investigue.",
+        },
+        "average_latency_assessment": {
+            "status": "excellent",
+            "label": "Excelente",
+            "explanation": "A latência média está muito baixa.",
+        },
+        "maximum_latency_assessment": {
+            "status": "excellent",
+            "label": "Excelente",
+            "explanation": "Não foram observados picos relevantes.",
+        },
     }
     assert "field-secret" not in response.text
 

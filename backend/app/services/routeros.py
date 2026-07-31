@@ -7,6 +7,13 @@ from typing import Any, TypeVar
 import routeros
 from routeros.errors import DeviceError, LoginError, RouterOSError
 
+from app.services.evaluation import (
+    assess_association,
+    assess_average_latency,
+    assess_maximum_latency,
+    assess_packet_loss,
+    assess_signal,
+)
 from app.models.mikrotik import (
     DeviceSummary,
     MikroTikConnection,
@@ -217,15 +224,17 @@ def _read_registration_table(
 
     for row in rows:
         signal = row.get("signal") or row.get("signal-strength")
+        signal_dbm = _signal_dbm(signal)
+        authorized = _optional_bool(row.get("authorized"))
         peers.append(
             WiFiPeer(
                 interface=row.get("interface"),
                 mac_address=row.get("mac-address"),
                 radio_name=row.get("radio-name"),
                 ssid=row.get("ssid"),
-                authorized=_optional_bool(row.get("authorized")),
+                authorized=authorized,
                 signal=signal,
-                signal_dbm=_signal_dbm(signal),
+                signal_dbm=signal_dbm,
                 tx_rate=row.get("tx-rate"),
                 rx_rate=row.get("rx-rate"),
                 tx_bits_per_second=_optional_int(row.get("tx-bits-per-second")),
@@ -233,6 +242,8 @@ def _read_registration_table(
                 uptime=row.get("uptime"),
                 last_activity=row.get("last-activity"),
                 band=row.get("band"),
+                signal_assessment=assess_signal(signal_dbm),
+                association_assessment=assess_association(authorized),
             )
         )
 
@@ -344,34 +355,49 @@ def _read_ping_result(client: Any, request: PingRequest) -> PingResult:
         packet_loss = _packet_loss(summary.get("packet-loss"))
 
         if sent is not None and received is not None and packet_loss is not None:
+            minimum_latency = _duration_ms(summary.get("min-rtt"))
+            average_latency = _duration_ms(summary.get("avg-rtt"))
+            maximum_latency = _duration_ms(summary.get("max-rtt"))
             return PingResult(
                 target=request.target,
                 sent=sent,
                 received=received,
                 packet_loss_percent=packet_loss,
-                minimum_latency_ms=_duration_ms(summary.get("min-rtt")),
-                average_latency_ms=_duration_ms(summary.get("avg-rtt")),
-                maximum_latency_ms=_duration_ms(summary.get("max-rtt")),
+                minimum_latency_ms=minimum_latency,
+                average_latency_ms=average_latency,
+                maximum_latency_ms=maximum_latency,
                 samples_ms=samples,
                 measurement_source="routeros_summary",
+                packet_loss_assessment=assess_packet_loss(packet_loss),
+                average_latency_assessment=assess_average_latency(
+                    average_latency
+                ),
+                maximum_latency_assessment=assess_maximum_latency(
+                    maximum_latency
+                ),
             )
 
     sent = request.count
     received = len(samples)
     packet_loss = ((sent - received) / sent) * 100
+    minimum_latency = min(samples) if samples else None
+    average_latency = round(sum(samples) / received, 3) if received else None
+    maximum_latency = max(samples) if samples else None
+    packet_loss = round(packet_loss, 2)
 
     return PingResult(
         target=request.target,
         sent=sent,
         received=received,
-        packet_loss_percent=round(packet_loss, 2),
-        minimum_latency_ms=min(samples) if samples else None,
-        average_latency_ms=(
-            round(sum(samples) / received, 3) if received else None
-        ),
-        maximum_latency_ms=max(samples) if samples else None,
+        packet_loss_percent=packet_loss,
+        minimum_latency_ms=minimum_latency,
+        average_latency_ms=average_latency,
+        maximum_latency_ms=maximum_latency,
         samples_ms=samples,
         measurement_source="orion_calculation",
+        packet_loss_assessment=assess_packet_loss(packet_loss),
+        average_latency_assessment=assess_average_latency(average_latency),
+        maximum_latency_assessment=assess_maximum_latency(maximum_latency),
     )
 
 

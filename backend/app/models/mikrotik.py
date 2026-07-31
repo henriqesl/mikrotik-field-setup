@@ -23,6 +23,20 @@ class WiFiInterface(BaseModel):
     running: bool | None
 
 
+class MetricAssessment(BaseModel):
+    status: Literal[
+        "excellent",
+        "good",
+        "attention",
+        "weak",
+        "critical",
+        "informational",
+        "unavailable",
+    ]
+    label: str
+    explanation: str
+
+
 class WiFiPeer(BaseModel):
     interface: str | None
     mac_address: str | None
@@ -38,6 +52,8 @@ class WiFiPeer(BaseModel):
     uptime: str | None
     last_activity: str | None
     band: str | None
+    signal_assessment: MetricAssessment
+    association_assessment: MetricAssessment
 
 
 class DeviceSummary(BaseModel):
@@ -70,3 +86,6 @@ class PingResult(BaseModel):
     maximum_latency_ms: float | None
     samples_ms: list[float]
     measurement_source: Literal["routeros_summary", "orion_calculation"]
+    packet_loss_assessment: MetricAssessment
+    average_latency_assessment: MetricAssessment
+    maximum_latency_assessment: MetricAssessment

@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { runPing } from "../services/api.js";
+import AssessmentBadge from "./AssessmentBadge.jsx";
 
 function formatLatency(value) {
   return value === null ? "Sem resposta" : `${value} ms`;
@@ -84,14 +85,30 @@ function PingTest({ connection }) {
             <div>
               <dt>Perda</dt>
               <dd>{result.packet_loss_percent}%</dd>
+              <div className="metric-assessment">
+                <AssessmentBadge assessment={result.packet_loss_assessment} />
+                <small>{result.packet_loss_assessment.explanation}</small>
+              </div>
             </div>
             <div>
               <dt>Latência média</dt>
               <dd>{formatLatency(result.average_latency_ms)}</dd>
+              <div className="metric-assessment">
+                <AssessmentBadge
+                  assessment={result.average_latency_assessment}
+                />
+                <small>{result.average_latency_assessment.explanation}</small>
+              </div>
             </div>
             <div>
               <dt>Latência máxima</dt>
               <dd>{formatLatency(result.maximum_latency_ms)}</dd>
+              <div className="metric-assessment">
+                <AssessmentBadge
+                  assessment={result.maximum_latency_assessment}
+                />
+                <small>{result.maximum_latency_assessment.explanation}</small>
+              </div>
             </div>
             <div>
               <dt>Respostas</dt>
@@ -113,4 +130,3 @@ function PingTest({ connection }) {
 }
 
 export default PingTest;
-
