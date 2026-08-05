@@ -141,6 +141,41 @@ class PingRequest(BaseModel):
     count: int = Field(default=5, ge=1, le=10)
 
 
+class ConnectivityRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    connection: MikroTikConnection
+    internet_target: IPv4Address = IPv4Address("1.1.1.1")
+    remote_target: IPv4Address | None = None
+
+
+class ConnectivityProbe(BaseModel):
+    label: str
+    status: Literal["passed", "failed", "unavailable"]
+    target: IPv4Address | None
+    sent: int | None
+    received: int | None
+    packet_loss_percent: float | None
+    average_latency_ms: float | None
+    summary: str
+
+
+class ARPValidation(BaseModel):
+    status: Literal["passed", "failed", "unavailable"]
+    ip_address: IPv4Address | None
+    mac_address: str | None
+    interface: str | None
+    summary: str
+
+
+class ConnectivityValidation(BaseModel):
+    gateway_address: IPv4Address | None
+    gateway: ConnectivityProbe
+    remote: ConnectivityProbe | None = None
+    arp: ARPValidation
+    internet: ConnectivityProbe
+
+
 class HealthComponent(BaseModel):
     metric: Literal[
         "packet_loss",

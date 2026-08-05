@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import ConnectionForm from "./components/ConnectionForm.jsx";
+import ConnectivityValidation from "./components/ConnectivityValidation.jsx";
 import DeviceSummary from "./components/DeviceSummary.jsx";
 import AlignmentMonitor from "./components/AlignmentMonitor.jsx";
 import PingTest from "./components/PingTest.jsx";
@@ -232,6 +233,9 @@ function App() {
             peers={device.wifi_peers}
             registrationTableAvailable={device.registration_table_available}
           />
+        )}
+        {device && activeConnection && (
+          <ConnectivityValidation connection={activeConnection} />
         )}
         {device && activeConnection && (
           <PingTest connection={activeConnection} />

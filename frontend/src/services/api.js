@@ -38,3 +38,10 @@ export function runPing(connection, target) {
     count: 5,
   });
 }
+
+export function validateConnectivity(connection, remoteTarget) {
+  return postJson("/api/mikrotik/connectivity", {
+    connection,
+    remote_target: remoteTarget || null,
+  });
+}

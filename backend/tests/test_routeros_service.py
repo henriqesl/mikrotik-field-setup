@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import pytest
 from routeros.errors import DeviceError
 
-from app.models.mikrotik import MikroTikConnection, PingRequest
+from app.models.mikrotik import ConnectivityRequest, MikroTikConnection, PingRequest
 from app.services import routeros as service
 
 
@@ -520,3 +520,95 @@ def test_ping_device_calculates_fallback_when_summary_is_missing(
     assert result.packet_loss_percent == 33.33
     assert result.average_latency_ms == 3
     assert result.measurement_source == "orion_calculation"
+
+
+def test_validate_connectivity_checks_gateway_arp_and_internet(monkeypatch) -> None:
+    class ConnectivityClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args) -> None:
+            return None
+
+        def run(self, *words):
+            if words == ("/ip/route/print",):
+                rows = [
+                    {
+                        "dst-address": "0.0.0.0/0",
+                        "gateway": "192.168.88.254",
+                        "active": "true",
+                        "disabled": "false",
+                    }
+                ]
+            elif words == ("/ip/arp/print",):
+                rows = [
+                    {
+                        "address": "192.168.88.2",
+                        "mac-address": "11:22:33:44:55:66",
+                        "interface": "bridge1",
+                        "complete": "true",
+                        "status": "reachable",
+                    }
+                ]
+            elif words[0] == "/ping":
+                target = words[1].split("=", 2)[2]
+                latency = "2ms" if target == "192.168.88.254" else "12ms"
+                rows = [
+                    {
+                        "sent": "3",
+                        "received": "3",
+                        "packet-loss": "0",
+                        "min-rtt": latency,
+                        "avg-rtt": latency,
+                        "max-rtt": latency,
+                    }
+                ]
+            else:
+                raise AssertionError(words)
+
+            return SimpleNamespace(
+                re=[SimpleNamespace(map=row) for row in rows]
+            )
+
+    monkeypatch.setattr(
+        service, "_open_client", lambda _connection: ConnectivityClient()
+    )
+    request = ConnectivityRequest(
+        connection=MikroTikConnection(
+            host="192.168.88.1",
+            username="orion",
+            password="secret",
+        ),
+        remote_target="192.168.88.2",
+    )
+
+    result = service.validate_connectivity(request)
+
+    assert str(result.gateway_address) == "192.168.88.254"
+    assert result.gateway.status == "passed"
+    assert result.gateway.average_latency_ms == 2
+    assert result.remote is not None
+    assert result.remote.status == "passed"
+    assert str(result.remote.target) == "192.168.88.2"
+    assert result.arp.status == "passed"
+    assert str(result.arp.ip_address) == "192.168.88.2"
+    assert result.arp.mac_address == "11:22:33:44:55:66"
+    assert result.internet.status == "passed"
+    assert str(result.internet.target) == "1.1.1.1"
+
+
+def test_arp_validation_reports_failed_resolution() -> None:
+    result = service._arp_validation(
+        True,
+        [
+            {
+                "address": "10.0.0.1",
+                "interface": "bridge1",
+                "status": "failed",
+            }
+        ],
+        service.IPv4Address("10.0.0.1"),
+    )
+
+    assert result.status == "failed"
+    assert result.mac_address is None

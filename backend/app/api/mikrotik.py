@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException, status
 
 from app.models.mikrotik import (
+    ConnectivityRequest,
+    ConnectivityValidation,
     DeviceSummary,
     MikroTikConnection,
     PingRequest,
@@ -14,6 +16,7 @@ from app.services.routeros import (
     MikroTikTLSVerificationError,
     discover_device,
     ping_device,
+    validate_connectivity,
 )
 
 
@@ -78,5 +81,16 @@ def ping_from_mikrotik(request: PingRequest) -> PingResult:
     """Run a short ICMP test from the connected MikroTik."""
     try:
         return ping_device(request)
+    except MikroTikError as error:
+        raise _friendly_http_error(error) from error
+
+
+@router.post("/connectivity", response_model=ConnectivityValidation)
+def connectivity_from_mikrotik(
+    request: ConnectivityRequest,
+) -> ConnectivityValidation:
+    """Validate the active gateway, ARP resolution and external reachability."""
+    try:
+        return validate_connectivity(request)
     except MikroTikError as error:
         raise _friendly_http_error(error) from error

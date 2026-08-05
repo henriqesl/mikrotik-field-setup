@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 
 from app.api import mikrotik
 from app.main import app
-from app.models.mikrotik import DeviceSummary, PingResult
+from app.models.mikrotik import ConnectivityValidation, DeviceSummary, PingResult
 from app.services.routeros import (
     MikroTikAuthenticationError,
     MikroTikConnectionError,
@@ -20,6 +20,33 @@ VALID_CONNECTION = {
     "use_tls": False,
     "verify_tls": True,
 }
+
+
+def test_cors_allows_orion_frontend_port() -> None:
+    response = client.options(
+        "/api/mikrotik/discover",
+        headers={
+            "Origin": "http://localhost:5174",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == (
+        "http://localhost:5174"
+    )
+
+
+def test_cors_does_not_allow_previous_frontend_port() -> None:
+    response = client.options(
+        "/api/mikrotik/discover",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+
+    assert "access-control-allow-origin" not in response.headers
 
 
 def test_discover_mikrotik_returns_normalized_device(monkeypatch) -> None:
@@ -271,3 +298,59 @@ def test_ping_from_mikrotik_rejects_invalid_target() -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_connectivity_validation_returns_independent_checks(monkeypatch) -> None:
+    def fake_validation(_request):
+        return ConnectivityValidation(
+            gateway_address="192.168.88.254",
+            gateway={
+                "label": "Gateway",
+                "status": "passed",
+                "target": "192.168.88.254",
+                "sent": 3,
+                "received": 3,
+                "packet_loss_percent": 0,
+                "average_latency_ms": 2,
+                "summary": "O destino respondeu ao MikroTik.",
+            },
+            arp={
+                "status": "passed",
+                "ip_address": "192.168.88.254",
+                "mac_address": "AA:BB:CC:DD:EE:FF",
+                "interface": "bridge1",
+                "summary": "O endereço MAC do gateway foi resolvido.",
+            },
+            internet={
+                "label": "Internet",
+                "status": "failed",
+                "target": "1.1.1.1",
+                "sent": 3,
+                "received": 0,
+                "packet_loss_percent": 100,
+                "average_latency_ms": None,
+                "summary": "O destino não respondeu aos três pacotes enviados.",
+            },
+        )
+
+    monkeypatch.setattr(mikrotik, "validate_connectivity", fake_validation)
+
+    response = client.post(
+        "/api/mikrotik/connectivity",
+        json={"connection": VALID_CONNECTION},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["gateway"]["status"] == "passed"
+    assert response.json()["arp"]["mac_address"] == "AA:BB:CC:DD:EE:FF"
+    assert response.json()["internet"] == {
+        "label": "Internet",
+        "status": "failed",
+        "target": "1.1.1.1",
+        "sent": 3,
+        "received": 0,
+        "packet_loss_percent": 100.0,
+        "average_latency_ms": None,
+        "summary": "O destino não respondeu aos três pacotes enviados.",
+    }
+    assert "field-secret" not in response.text

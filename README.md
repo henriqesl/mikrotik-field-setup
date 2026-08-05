@@ -1,69 +1,86 @@
-# MikroTik Field Setup
+# ORION — MikroTik Field Assistant
 
-Interactive and offline-first MikroTik RouterOS script generator for rapid Point-to-Point (PtP) and Point-to-Multipoint (PtMP) deployments.
+O ORION simplifica a leitura, o monitoramento e o diagnóstico de equipamentos MikroTik para equipes de campo. Ele não substitui o RouterOS, WinBox ou WebFig: apresenta os dados mais importantes do enlace com explicações diretas.
 
-Designed to help field technicians configure MikroTik radios quickly, consistently, and without typing errors.
+> Configure. Monitore. Valide.
 
----
+## ORION Field V1
 
-# The Problem & Benefits
+A V1 conecta diretamente ao RouterOS e oferece:
 
-Configuring MikroTik radios manually through the CLI is slow and prone to mistakes, especially during field installations. This app allows technicians to input only the essential data (SSID, Password, IP, and Gateway) to instantly generate a standardized script.
+- identificação de modelo, versão, arquitetura e pacote Wi-Fi;
+- suporte às pilhas `wifi`, `wifiwave2` e `wireless`;
+- leitura de interfaces, modo AP/Station, SSID, canal e bridge;
+- registration table, sinal, taxas TX/RX e tempo de associação;
+- monitoramento automático e modo rápido de alinhamento;
+- ping com perda e latências média e máxima;
+- avaliação individual das métricas e saúde ponderada do enlace;
+- diagnóstico estrutural de bridge, portas e IP de gerenciamento;
+- validação manual de gateway, ARP e acesso externo por ICMP.
 
-**Key Benefits:**
-- Faster deployments
-- Reduced human errors
-- Standardized ISP configurations
-- Secure wireless settings
-- 100% offline workflow
+Os dados são lidos da API do RouterOS. Interpretações e valores calculados são apresentados separadamente. Não existe banco de dados e as credenciais permanecem somente na memória durante a conexão.
 
----
+## Tecnologias
 
-# Features
+- React 19 e Vite no frontend;
+- FastAPI no backend;
+- `routeros-py` para a API binária do RouterOS;
+- pytest para os testes do backend.
 
-- **Dual Package Support:** Compatible with both legacy (`wireless`) and RouterOS v7 (`wifi`) stacks.
-- **DFS Prevention:** Auto-suggests radar-free frequencies and standard channel widths (20/40 MHz) to avoid DFS wait periods.
-- **Transparent Bridge Ready:** Standardized automation for PtP and PtMP setups.
-- **Zero Dependencies:** A single HTML file that runs completely offline on Windows, Linux, macOS, Android, and iOS. No backend or database required.
-- **One-Click Copy:** Instantly copy and paste directly into Winbox's New Terminal.
+## Executar localmente
 
----
+Requisitos: Node.js, Python 3.11 ou superior e um MikroTik com o serviço API habilitado.
 
-# Usage
+### Backend
 
-1. Download and open `gerador-mikrotik.html` in any modern browser (offline supported).
-2. Select the operation mode (**Access Point** or **Station**).
-3. Fill in the network details (**SSID, Password, IP, Gateway**).
-4. Click **Copy Script**.
-5. Paste into a factory-reset MikroTik terminal (**No Default Configuration**).
-
----
-
-# Workflow
-
-```text
-Open App ➔ Fill Info ➔ Generate & Copy ➔ Paste in Winbox ➔ Done ✔
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -e ".[dev]"
+uvicorn app.main:app --reload
 ```
 
----
+O backend fica disponível em `http://127.0.0.1:8000`.
 
-# Roadmap
+### Frontend
 
-- ✅ **v1 (Current):** Single HTML, offline support, AP/Station generator, dual package support, DFS suggestions.
-- 🚧 **v2 (Next):** Project componentization (HTML/CSS/JS separation), improved UI, and GitHub Pages/Vercel deployment.
-- 🚧 **v3:** Progressive Web App (PWA) migration with React/Vue, native installation, and full offline cache.
-- 🚧 **v4:** Edge Router Templates (PPPoE, VLANs, WireGuard, DHCP, Static Routing, Firewall).
+Em outro terminal:
 
----
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
 
-# Contributing
+O frontend usa `http://localhost:5174`. A porta foi fixada com `strictPort`, portanto o Vite avisará claramente caso ela também esteja ocupada.
 
-Contributions are always welcome! If you've encountered a real-world RF scenario that isn't currently covered, feel free to open an Issue or submit a Pull Request. Every contribution helps improve deployments for ISP technicians.
+## Testes e build
 
----
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m pytest
+```
 
-# Tech & License
+```powershell
+cd frontend
+npm run build
+npm audit --audit-level=high
+```
 
-**Built with:** HTML5, CSS3, Vanilla JavaScript, RouterOS CLI.
+## Modo offline
 
-**License:** Released under the MIT License. Feel free to use, modify, and distribute.
+O arquivo `mikrotik-generator.html` continua sendo o ORION Setup offline. Ele gera scripts `.rsc` para enlace, rede básica e Gateway LoRa sem depender do backend.
+
+## Limites conhecidos da V1
+
+- conexão somente por IPv4 e RouterOS API;
+- sem descoberta ou comunicação por MAC;
+- sem configuração direta, reset ou alterações no equipamento;
+- sem banco de dados, histórico, relatórios ou autenticação de usuários;
+- ICMP pode ser bloqueado, portanto um teste externo sem resposta não prova sozinho que a internet está indisponível;
+- validação final em equipamentos físicos ainda é necessária antes de uso operacional.
+
+## Evolução planejada
+
+A V2 poderá adicionar configuração direta e assistida de enlaces, com pré-visualização, backup e validação antes de aplicar mudanças. C++ não faz parte da V1 e somente deverá entrar futuramente se houver uma necessidade concreta de desempenho, sockets ou diagnóstico avançado.

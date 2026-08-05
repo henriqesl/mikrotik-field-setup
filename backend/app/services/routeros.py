@@ -2,6 +2,7 @@ import re
 import socket
 import ssl
 from collections.abc import Callable, Mapping
+from ipaddress import AddressValueError, IPv4Address
 from typing import Any, TypeVar
 
 import routeros
@@ -16,8 +17,12 @@ from app.services.evaluation import (
     calculate_link_health,
 )
 from app.models.mikrotik import (
+    ARPValidation,
     BridgeInfo,
     BridgePort,
+    ConnectivityProbe,
+    ConnectivityRequest,
+    ConnectivityValidation,
     DefaultRouteInfo,
     DeviceSummary,
     DiagnosticCheck,
@@ -748,3 +753,175 @@ def ping_device(request: PingRequest) -> PingResult:
         )
 
     return _with_connection(request.connection, run_diagnostics)
+
+
+def _gateway_address(rows: list[Mapping[str, str]]) -> IPv4Address | None:
+    enabled_routes = [
+        row for row in rows
+        if row.get("dst-address") in (None, "", "0.0.0.0/0")
+        and not _optional_bool(row.get("disabled"))
+        and row.get("gateway")
+    ]
+    ordered_routes = sorted(
+        enabled_routes,
+        key=lambda row: _optional_bool(row.get("active")) is not True,
+    )
+
+    for row in ordered_routes:
+        match = re.search(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", row["gateway"])
+
+        if not match:
+            continue
+
+        try:
+            return IPv4Address(match.group())
+        except AddressValueError:
+            continue
+
+    return None
+
+
+def _connectivity_probe(
+    client: Any,
+    request: ConnectivityRequest,
+    label: str,
+    target: IPv4Address | None,
+) -> ConnectivityProbe:
+    if target is None:
+        return ConnectivityProbe(
+            label=label,
+            status="unavailable",
+            target=None,
+            sent=None,
+            received=None,
+            packet_loss_percent=None,
+            average_latency_ms=None,
+            summary="Nenhum destino válido foi encontrado para este teste.",
+        )
+
+    try:
+        result = _read_ping_result(
+            client,
+            PingRequest(connection=request.connection, target=target, count=3),
+        )
+    except DeviceError:
+        return ConnectivityProbe(
+            label=label,
+            status="unavailable",
+            target=target,
+            sent=None,
+            received=None,
+            packet_loss_percent=None,
+            average_latency_ms=None,
+            summary="O RouterOS não permitiu executar este teste.",
+        )
+
+    reachable = result.received > 0
+    return ConnectivityProbe(
+        label=label,
+        status="passed" if reachable else "failed",
+        target=target,
+        sent=result.sent,
+        received=result.received,
+        packet_loss_percent=result.packet_loss_percent,
+        average_latency_ms=result.average_latency_ms,
+        summary=(
+            "O destino respondeu ao MikroTik."
+            if reachable
+            else "O destino não respondeu aos três pacotes enviados."
+        ),
+    )
+
+
+def _arp_validation(
+    available: bool,
+    rows: list[Mapping[str, str]],
+    gateway: IPv4Address | None,
+) -> ARPValidation:
+    if gateway is None:
+        return ARPValidation(
+            status="unavailable",
+            ip_address=None,
+            mac_address=None,
+            interface=None,
+            summary="Não há gateway IPv4 para consultar na tabela ARP.",
+        )
+    if not available:
+        return ARPValidation(
+            status="unavailable",
+            ip_address=gateway,
+            mac_address=None,
+            interface=None,
+            summary="A tabela ARP não pôde ser consultada.",
+        )
+
+    row = next((item for item in rows if item.get("address") == str(gateway)), None)
+
+    if row is None:
+        return ARPValidation(
+            status="unavailable",
+            ip_address=gateway,
+            mac_address=None,
+            interface=None,
+            summary="O gateway não apareceu na tabela ARP; algumas interfaces não usam ARP.",
+        )
+
+    arp_status = row.get("status")
+    resolved = (
+        _optional_bool(row.get("complete")) is True
+        or arp_status in {"permanent", "reachable", "stale", "probe", "delay"}
+    ) and bool(row.get("mac-address"))
+    failed = arp_status in {"failed", "incomplete"}
+
+    return ARPValidation(
+        status="passed" if resolved else "failed" if failed else "unavailable",
+        ip_address=gateway,
+        mac_address=row.get("mac-address"),
+        interface=row.get("interface"),
+        summary=(
+            "O endereço MAC do gateway foi resolvido."
+            if resolved
+            else "A resolução ARP do gateway falhou."
+            if failed
+            else "A entrada ARP existe, mas o estado não permite confirmar a resolução."
+        ),
+    )
+
+
+def validate_connectivity(request: ConnectivityRequest) -> ConnectivityValidation:
+    """Validate gateway, ARP resolution and external IPv4 reachability."""
+    def run_validation(client: Any) -> ConnectivityValidation:
+        routes_available, route_rows = _safe_rows(client, "/ip/route/print")
+        gateway_address = _gateway_address(route_rows) if routes_available else None
+        gateway_probe = _connectivity_probe(
+            client, request, "Gateway", gateway_address
+        )
+        remote_probe = (
+            _connectivity_probe(
+                client, request, "Outro rádio", request.remote_target
+            )
+            if request.remote_target is not None
+            else None
+        )
+        arp_available, arp_rows = _safe_rows(client, "/ip/arp/print")
+        arp = _arp_validation(
+            arp_available,
+            arp_rows,
+            request.remote_target or gateway_address,
+        )
+        internet_probe = _connectivity_probe(
+            client, request, "Internet", request.internet_target
+        )
+
+        return ConnectivityValidation(
+            gateway_address=gateway_address,
+            gateway=gateway_probe,
+            remote=remote_probe,
+            arp=arp,
+            internet=internet_probe,
+        )
+
+    return _with_connection(request.connection, run_validation)
+    ConnectivityProbe,
+    ConnectivityRequest,
+    ConnectivityValidation,
