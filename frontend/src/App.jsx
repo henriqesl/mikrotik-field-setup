@@ -1,0 +1,248 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import ConnectionForm from "./components/ConnectionForm.jsx";
+import ConnectivityValidation from "./components/ConnectivityValidation.jsx";
+import DeviceSummary from "./components/DeviceSummary.jsx";
+import AlignmentMonitor from "./components/AlignmentMonitor.jsx";
+import PingTest from "./components/PingTest.jsx";
+import { discoverDevice } from "./services/api.js";
+
+const API_STATES = {
+  checking: {
+    label: "Verificando backend",
+    className: "status status--checking",
+  },
+  online: {
+    label: "Backend disponível",
+    className: "status status--online",
+  },
+  offline: {
+    label: "Backend indisponível",
+    className: "status status--offline",
+  },
+};
+
+const MONITOR_INTERVAL_MS = 15_000;
+const ALIGNMENT_INTERVAL_MS = 3_000;
+
+function App() {
+  const [apiState, setApiState] = useState("checking");
+  const [device, setDevice] = useState(null);
+  const [activeConnection, setActiveConnection] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isMonitoring, setIsMonitoring] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
+  const [monitoringError, setMonitoringError] = useState("");
+  const [isAlignmentMode, setIsAlignmentMode] = useState(false);
+  const refreshInFlight = useRef(false);
+  const connectionGeneration = useRef(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function checkApi() {
+      try {
+        const response = await fetch("/api/health", {
+          signal: controller.signal,
+        });
+        const data = await response.json();
+
+        setApiState(response.ok && data.status === "ok" ? "online" : "offline");
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          setApiState("offline");
+        }
+      }
+    }
+
+    checkApi();
+
+    return () => controller.abort();
+  }, []);
+
+  const refreshDevice = useCallback(async () => {
+    if (!activeConnection || refreshInFlight.current) {
+      return;
+    }
+
+    refreshInFlight.current = true;
+    const refreshGeneration = connectionGeneration.current;
+    setIsRefreshing(true);
+
+    try {
+      const refreshedDevice = await discoverDevice(activeConnection);
+
+      if (refreshGeneration !== connectionGeneration.current) {
+        return;
+      }
+
+      setDevice(refreshedDevice);
+      setLastUpdatedAt(new Date());
+      setMonitoringError("");
+    } catch (error) {
+      if (refreshGeneration === connectionGeneration.current) {
+        setMonitoringError(error.message);
+      }
+    } finally {
+      if (refreshGeneration === connectionGeneration.current) {
+        refreshInFlight.current = false;
+        setIsRefreshing(false);
+      }
+    }
+  }, [activeConnection]);
+
+  useEffect(() => {
+    if (!activeConnection || !isMonitoring) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let timerId;
+
+    function scheduleRefresh() {
+      timerId = window.setTimeout(async () => {
+        await refreshDevice();
+
+        if (!cancelled) {
+          scheduleRefresh();
+        }
+      }, isAlignmentMode ? ALIGNMENT_INTERVAL_MS : MONITOR_INTERVAL_MS);
+    }
+
+    scheduleRefresh();
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timerId);
+    };
+  }, [activeConnection, isAlignmentMode, isMonitoring, refreshDevice]);
+
+  const currentState = API_STATES[apiState];
+
+  async function handleConnect(connection) {
+    setIsLoading(true);
+    setErrorMessage("");
+    setDevice(null);
+    setActiveConnection(null);
+
+    try {
+      const discoveredDevice = await discoverDevice(connection);
+      connectionGeneration.current += 1;
+      setDevice(discoveredDevice);
+      setActiveConnection(connection);
+      setLastUpdatedAt(new Date());
+      setMonitoringError("");
+      setIsMonitoring(true);
+      setIsAlignmentMode(false);
+      return true;
+    } catch (error) {
+      setErrorMessage(error.message);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function handleDisconnect() {
+    connectionGeneration.current += 1;
+    setDevice(null);
+    setActiveConnection(null);
+    setIsMonitoring(false);
+    setIsRefreshing(false);
+    setLastUpdatedAt(null);
+    setMonitoringError("");
+    setIsAlignmentMode(false);
+    refreshInFlight.current = false;
+  }
+
+  function handleToggleMonitoring() {
+    setIsMonitoring((current) => {
+      if (current) {
+        setIsAlignmentMode(false);
+      }
+
+      return !current;
+    });
+  }
+
+  function handleToggleAlignment() {
+    setIsAlignmentMode((current) => {
+      const nextValue = !current;
+
+      if (nextValue) {
+        setIsMonitoring(true);
+      }
+
+      return nextValue;
+    });
+  }
+
+  return (
+    <main className="page">
+      <header className="app-header">
+        <section className="hero">
+          <div className="brand-mark" aria-hidden="true">
+            O
+          </div>
+
+          <div>
+            <p className="eyebrow">MikroTik Field Assistant</p>
+            <h1>ORION</h1>
+            <p className="tagline">Configure. Monitore. Valide.</p>
+          </div>
+        </section>
+
+        <div className={currentState.className} role="status">
+          <span className="status-dot" aria-hidden="true" />
+          {currentState.label}
+        </div>
+      </header>
+
+      <section className="workspace">
+        {!device && (
+          <ConnectionForm isLoading={isLoading} onConnect={handleConnect} />
+        )}
+
+        {errorMessage && (
+          <div className="error-message" role="alert">
+            <strong>Conexão não concluída</strong>
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {device && (
+          <DeviceSummary
+            device={device}
+            isMonitoring={isMonitoring}
+            isRefreshing={isRefreshing}
+            lastUpdatedAt={lastUpdatedAt}
+            monitoringError={monitoringError}
+            onDisconnect={handleDisconnect}
+            onRefresh={refreshDevice}
+            onToggleMonitoring={handleToggleMonitoring}
+          />
+        )}
+        {device && (
+          <AlignmentMonitor
+            isAlignmentMode={isAlignmentMode}
+            isMonitoring={isMonitoring}
+            lastUpdatedAt={lastUpdatedAt}
+            onToggleAlignment={handleToggleAlignment}
+            peers={device.wifi_peers}
+            registrationTableAvailable={device.registration_table_available}
+          />
+        )}
+        {device && activeConnection && (
+          <ConnectivityValidation connection={activeConnection} />
+        )}
+        {device && activeConnection && (
+          <PingTest connection={activeConnection} />
+        )}
+      </section>
+    </main>
+  );
+}
+
+export default App;
