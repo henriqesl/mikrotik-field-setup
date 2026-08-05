@@ -41,7 +41,28 @@ function peerName(peer) {
   return peer.radio_name || peer.ssid || peer.mac_address || "Peer sem identificação";
 }
 
-function DeviceSummary({ device }) {
+function formatUpdateTime(value) {
+  if (!value) {
+    return "Aguardando primeira leitura";
+  }
+
+  return `Atualizado às ${value.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  })}`;
+}
+
+function DeviceSummary({
+  device,
+  isMonitoring,
+  isRefreshing,
+  lastUpdatedAt,
+  monitoringError,
+  onDisconnect,
+  onRefresh,
+  onToggleMonitoring,
+}) {
   return (
     <section className="device-card" aria-labelledby="device-title">
       <div className="section-heading">
@@ -51,6 +72,45 @@ function DeviceSummary({ device }) {
         </div>
         <span className="success-badge">Conectado</span>
       </div>
+
+      <div className="monitoring-bar" aria-live="polite">
+        <div>
+          <span
+            className={
+              isMonitoring
+                ? "monitoring-dot monitoring-dot--active"
+                : "monitoring-dot"
+            }
+            aria-hidden="true"
+          />
+          <div>
+            <strong>
+              {isMonitoring ? "Monitoramento automático" : "Monitoramento pausado"}
+            </strong>
+            <span>
+              {isRefreshing ? "Atualizando agora…" : formatUpdateTime(lastUpdatedAt)}
+            </span>
+          </div>
+        </div>
+        <div className="monitoring-actions">
+          <button disabled={isRefreshing} onClick={onRefresh} type="button">
+            Atualizar agora
+          </button>
+          <button onClick={onToggleMonitoring} type="button">
+            {isMonitoring ? "Pausar" : "Retomar"}
+          </button>
+          <button className="disconnect-button" onClick={onDisconnect} type="button">
+            Desconectar
+          </button>
+        </div>
+      </div>
+
+      {monitoringError && (
+        <div className="monitoring-warning" role="alert">
+          <strong>A última atualização falhou.</strong>
+          <span>{monitoringError} Os dados anteriores continuam visíveis.</span>
+        </div>
+      )}
 
       <dl className="device-grid">
         {DEVICE_FIELDS.map(([label, key]) => (

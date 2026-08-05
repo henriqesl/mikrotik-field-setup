@@ -147,6 +147,101 @@ h2 {
   background: rgb(34 197 94 / 12%);
 }
 
+.monitoring-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #25354d;
+  border-radius: 0.75rem;
+  background: #0b1220;
+}
+
+.monitoring-bar > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.monitoring-bar > div:first-child > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.monitoring-bar strong {
+  color: #e2e8f0;
+  font-size: 0.82rem;
+}
+
+.monitoring-bar span {
+  color: #64748b;
+  font-size: 0.7rem;
+}
+
+.monitoring-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: #64748b;
+}
+
+.monitoring-dot--active {
+  background: #22c55e;
+  box-shadow: 0 0 0 0.25rem rgb(34 197 94 / 10%);
+}
+
+.monitoring-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.monitoring-actions button {
+  padding: 0.45rem 0.65rem;
+  border: 1px solid #334155;
+  border-radius: 0.5rem;
+  color: #cbd5e1;
+  background: #111c2e;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.monitoring-actions button:hover:not(:disabled) {
+  border-color: #60a5fa;
+  color: #f8fafc;
+}
+
+.monitoring-actions button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.monitoring-actions .disconnect-button {
+  border-color: rgb(244 63 94 / 35%);
+  color: #fb7185;
+}
+
+.monitoring-warning {
+  display: grid;
+  gap: 0.2rem;
+  margin-bottom: 1.25rem;
+  padding: 0.8rem 1rem;
+  border-left: 3px solid #eab308;
+  border-radius: 0.45rem;
+  color: #fde68a;
+  background: rgb(234 179 8 / 8%);
+  font-size: 0.78rem;
+}
+
+.monitoring-warning span {
+  color: #94a3b8;
+  line-height: 1.45;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -931,6 +1026,16 @@ h2 {
   .wifi-heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .monitoring-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .monitoring-actions {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .wifi-meta {

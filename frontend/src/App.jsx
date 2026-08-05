@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import ConnectionForm from "./components/ConnectionForm.jsx";
 import DeviceSummary from "./components/DeviceSummary.jsx";
@@ -20,12 +20,20 @@ const API_STATES = {
   },
 };
 
+const MONITOR_INTERVAL_MS = 15_000;
+
 function App() {
   const [apiState, setApiState] = useState("checking");
   const [device, setDevice] = useState(null);
   const [activeConnection, setActiveConnection] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isMonitoring, setIsMonitoring] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
+  const [monitoringError, setMonitoringError] = useState("");
+  const refreshInFlight = useRef(false);
+  const connectionGeneration = useRef(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -50,6 +58,63 @@ function App() {
     return () => controller.abort();
   }, []);
 
+  const refreshDevice = useCallback(async () => {
+    if (!activeConnection || refreshInFlight.current) {
+      return;
+    }
+
+    refreshInFlight.current = true;
+    const refreshGeneration = connectionGeneration.current;
+    setIsRefreshing(true);
+
+    try {
+      const refreshedDevice = await discoverDevice(activeConnection);
+
+      if (refreshGeneration !== connectionGeneration.current) {
+        return;
+      }
+
+      setDevice(refreshedDevice);
+      setLastUpdatedAt(new Date());
+      setMonitoringError("");
+    } catch (error) {
+      if (refreshGeneration === connectionGeneration.current) {
+        setMonitoringError(error.message);
+      }
+    } finally {
+      if (refreshGeneration === connectionGeneration.current) {
+        refreshInFlight.current = false;
+        setIsRefreshing(false);
+      }
+    }
+  }, [activeConnection]);
+
+  useEffect(() => {
+    if (!activeConnection || !isMonitoring) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let timerId;
+
+    function scheduleRefresh() {
+      timerId = window.setTimeout(async () => {
+        await refreshDevice();
+
+        if (!cancelled) {
+          scheduleRefresh();
+        }
+      }, MONITOR_INTERVAL_MS);
+    }
+
+    scheduleRefresh();
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timerId);
+    };
+  }, [activeConnection, isMonitoring, refreshDevice]);
+
   const currentState = API_STATES[apiState];
 
   async function handleConnect(connection) {
@@ -60,8 +125,12 @@ function App() {
 
     try {
       const discoveredDevice = await discoverDevice(connection);
+      connectionGeneration.current += 1;
       setDevice(discoveredDevice);
       setActiveConnection(connection);
+      setLastUpdatedAt(new Date());
+      setMonitoringError("");
+      setIsMonitoring(true);
       return true;
     } catch (error) {
       setErrorMessage(error.message);
@@ -69,6 +138,17 @@ function App() {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  function handleDisconnect() {
+    connectionGeneration.current += 1;
+    setDevice(null);
+    setActiveConnection(null);
+    setIsMonitoring(false);
+    setIsRefreshing(false);
+    setLastUpdatedAt(null);
+    setMonitoringError("");
+    refreshInFlight.current = false;
   }
 
   return (
@@ -93,7 +173,9 @@ function App() {
       </header>
 
       <section className="workspace">
-        <ConnectionForm isLoading={isLoading} onConnect={handleConnect} />
+        {!device && (
+          <ConnectionForm isLoading={isLoading} onConnect={handleConnect} />
+        )}
 
         {errorMessage && (
           <div className="error-message" role="alert">
@@ -102,7 +184,18 @@ function App() {
           </div>
         )}
 
-        {device && <DeviceSummary device={device} />}
+        {device && (
+          <DeviceSummary
+            device={device}
+            isMonitoring={isMonitoring}
+            isRefreshing={isRefreshing}
+            lastUpdatedAt={lastUpdatedAt}
+            monitoringError={monitoringError}
+            onDisconnect={handleDisconnect}
+            onRefresh={refreshDevice}
+            onToggleMonitoring={() => setIsMonitoring((current) => !current)}
+          />
+        )}
         {device && activeConnection && (
           <PingTest connection={activeConnection} />
         )}
