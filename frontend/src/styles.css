@@ -102,12 +102,144 @@ h2 {
 
 .connection-form,
 .device-card,
+.alignment-card,
 .diagnostic-card {
   padding: 2rem;
   border: 1px solid #1e3a5f;
   border-radius: 1.25rem;
   background: rgb(15 23 42 / 88%);
   box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 25%);
+}
+
+.alignment-heading {
+  align-items: center;
+}
+
+.alignment-toggle {
+  padding: 0.65rem 0.85rem;
+  border: 1px solid #3b82f6;
+  border-radius: 0.6rem;
+  color: #bfdbfe;
+  background: rgb(37 99 235 / 12%);
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.alignment-toggle:hover {
+  color: #eff6ff;
+  background: rgb(37 99 235 / 22%);
+}
+
+.alignment-toggle--active {
+  border-color: #22c55e;
+  color: #86efac;
+  background: rgb(34 197 94 / 12%);
+}
+
+.alignment-status {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.85rem;
+  color: #94a3b8;
+  font-size: 0.74rem;
+}
+
+.alignment-status small {
+  margin-left: auto;
+  color: #64748b;
+  font-size: 0.68rem;
+}
+
+.alignment-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.alignment-peer {
+  padding: 1rem;
+  border: 1px solid #25354d;
+  border-radius: 0.8rem;
+  background: #0b1220;
+}
+
+.alignment-peer header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.alignment-peer header > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.alignment-peer header strong {
+  color: #f8fafc;
+}
+
+.alignment-peer header span {
+  color: #64748b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+}
+
+.alignment-values {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.alignment-values > div {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem;
+  border-radius: 0.6rem;
+  background: #111c2e;
+}
+
+.alignment-values span {
+  color: #64748b;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.alignment-values strong {
+  color: #e2e8f0;
+  font-size: 0.9rem;
+}
+
+.signal-scale {
+  height: 0.4rem;
+  margin-top: 0.8rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #1e293b;
+}
+
+.signal-scale > div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f43f5e, #eab308 55%, #22c55e);
+  transition: width 300ms ease;
+}
+
+.alignment-peer > p {
+  margin: 0.65rem 0 0;
+  color: #64748b;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.alignment-note {
+  margin: 0.85rem 0 0;
+  color: #64748b;
+  font-size: 0.7rem;
+  line-height: 1.45;
 }
 
 .section-description {
@@ -1043,6 +1175,24 @@ h2 {
   }
 
   .diagnostic-list {
+    grid-template-columns: 1fr;
+  }
+
+  .alignment-status {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .alignment-status small {
+    width: 100%;
+    margin-left: 1.1rem;
+  }
+
+  .alignment-peer header {
+    flex-direction: column;
+  }
+
+  .alignment-values {
     grid-template-columns: 1fr;
   }
 

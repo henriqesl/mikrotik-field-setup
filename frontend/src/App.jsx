@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import ConnectionForm from "./components/ConnectionForm.jsx";
 import DeviceSummary from "./components/DeviceSummary.jsx";
+import AlignmentMonitor from "./components/AlignmentMonitor.jsx";
 import PingTest from "./components/PingTest.jsx";
 import { discoverDevice } from "./services/api.js";
 
@@ -21,6 +22,7 @@ const API_STATES = {
 };
 
 const MONITOR_INTERVAL_MS = 15_000;
+const ALIGNMENT_INTERVAL_MS = 3_000;
 
 function App() {
   const [apiState, setApiState] = useState("checking");
@@ -32,6 +34,7 @@ function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
   const [monitoringError, setMonitoringError] = useState("");
+  const [isAlignmentMode, setIsAlignmentMode] = useState(false);
   const refreshInFlight = useRef(false);
   const connectionGeneration = useRef(0);
 
@@ -104,7 +107,7 @@ function App() {
         if (!cancelled) {
           scheduleRefresh();
         }
-      }, MONITOR_INTERVAL_MS);
+      }, isAlignmentMode ? ALIGNMENT_INTERVAL_MS : MONITOR_INTERVAL_MS);
     }
 
     scheduleRefresh();
@@ -113,7 +116,7 @@ function App() {
       cancelled = true;
       window.clearTimeout(timerId);
     };
-  }, [activeConnection, isMonitoring, refreshDevice]);
+  }, [activeConnection, isAlignmentMode, isMonitoring, refreshDevice]);
 
   const currentState = API_STATES[apiState];
 
@@ -131,6 +134,7 @@ function App() {
       setLastUpdatedAt(new Date());
       setMonitoringError("");
       setIsMonitoring(true);
+      setIsAlignmentMode(false);
       return true;
     } catch (error) {
       setErrorMessage(error.message);
@@ -148,7 +152,30 @@ function App() {
     setIsRefreshing(false);
     setLastUpdatedAt(null);
     setMonitoringError("");
+    setIsAlignmentMode(false);
     refreshInFlight.current = false;
+  }
+
+  function handleToggleMonitoring() {
+    setIsMonitoring((current) => {
+      if (current) {
+        setIsAlignmentMode(false);
+      }
+
+      return !current;
+    });
+  }
+
+  function handleToggleAlignment() {
+    setIsAlignmentMode((current) => {
+      const nextValue = !current;
+
+      if (nextValue) {
+        setIsMonitoring(true);
+      }
+
+      return nextValue;
+    });
   }
 
   return (
@@ -193,7 +220,17 @@ function App() {
             monitoringError={monitoringError}
             onDisconnect={handleDisconnect}
             onRefresh={refreshDevice}
-            onToggleMonitoring={() => setIsMonitoring((current) => !current)}
+            onToggleMonitoring={handleToggleMonitoring}
+          />
+        )}
+        {device && (
+          <AlignmentMonitor
+            isAlignmentMode={isAlignmentMode}
+            isMonitoring={isMonitoring}
+            lastUpdatedAt={lastUpdatedAt}
+            onToggleAlignment={handleToggleAlignment}
+            peers={device.wifi_peers}
+            registrationTableAvailable={device.registration_table_available}
           />
         )}
         {device && activeConnection && (
