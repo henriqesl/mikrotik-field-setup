@@ -38,6 +38,11 @@ class FakeClient:
                     "mac-address": "AA:BB:CC:DD:EE:FF",
                     "disabled": "false",
                     "running": "true",
+                    "configuration.mode": "station",
+                    "configuration.ssid": "ORION-Link",
+                    "channel.frequency": "5805",
+                    "channel.width": "20mhz",
+                    "channel.band": "5ghz-ax",
                 }
             ],
             "/interface/wifi/registration-table/print": [
@@ -138,6 +143,11 @@ def test_discover_device_uses_plain_api_and_maps_real_fields(monkeypatch) -> Non
     assert result.wifi_stack == "wifi"
     assert result.wifi_interfaces[0].name == "wifi1"
     assert result.wifi_interfaces[0].running is True
+    assert result.wifi_interfaces[0].mode == "station"
+    assert result.wifi_interfaces[0].ssid == "ORION-Link"
+    assert result.wifi_interfaces[0].frequency == "5805"
+    assert result.wifi_interfaces[0].channel_width == "20mhz"
+    assert result.wifi_interfaces[0].band == "5ghz-ax"
     assert result.registration_table_available is True
     assert result.wifi_peers[0].signal == "-61"
     assert result.wifi_peers[0].signal_dbm == -61
@@ -221,6 +231,11 @@ def test_discover_device_falls_back_to_legacy_wireless_menu(monkeypatch) -> None
                         "mac-address": "11:22:33:44:55:66",
                         "disabled": "false",
                         "running": "false",
+                        "mode": "station-bridge",
+                        "ssid": "ORION-Legacy",
+                        "frequency": "5745",
+                        "channel-width": "20/40mhz-Ce",
+                        "band": "5ghz-a/n",
                     }
                 ]
             elif command == "/interface/wireless/registration-table/print":
@@ -260,6 +275,11 @@ def test_discover_device_falls_back_to_legacy_wireless_menu(monkeypatch) -> None
     assert result.wifi_stack == "wireless"
     assert result.wifi_interfaces[0].name == "wlan1"
     assert result.wifi_interfaces[0].running is False
+    assert result.wifi_interfaces[0].mode == "station-bridge"
+    assert result.wifi_interfaces[0].ssid == "ORION-Legacy"
+    assert result.wifi_interfaces[0].frequency == "5745"
+    assert result.wifi_interfaces[0].channel_width == "20/40mhz-Ce"
+    assert result.wifi_interfaces[0].band == "5ghz-a/n"
     assert result.registration_table_available is True
     assert result.wifi_peers[0].radio_name == "AP-Torre"
     assert result.wifi_peers[0].signal == "-78dBm@6Mbps"
@@ -280,6 +300,11 @@ def test_structural_diagnostic_explains_incomplete_bridge_without_rejecting_l2()
                 mac_address=None,
                 disabled=False,
                 running=True,
+                mode="station",
+                ssid="ORION-Link",
+                frequency="5805",
+                channel_width="20mhz",
+                band="5ghz-ax",
             )
         ],
         registration_table_available=True,

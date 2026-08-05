@@ -38,6 +38,11 @@ def test_discover_mikrotik_returns_normalized_device(monkeypatch) -> None:
                     "mac_address": "AA:BB:CC:DD:EE:FF",
                     "disabled": False,
                     "running": True,
+                    "mode": "station",
+                    "ssid": "ORION-Link",
+                    "frequency": "5805",
+                    "channel_width": "20mhz",
+                    "band": "5ghz-ax",
                 }
             ],
             registration_table_available=True,
@@ -96,6 +101,11 @@ def test_discover_mikrotik_returns_normalized_device(monkeypatch) -> None:
                 "mac_address": "AA:BB:CC:DD:EE:FF",
                 "disabled": False,
                 "running": True,
+                "mode": "station",
+                "ssid": "ORION-Link",
+                "frequency": "5805",
+                "channel_width": "20mhz",
+                "band": "5ghz-ax",
             }
         ],
         "registration_table_available": True,

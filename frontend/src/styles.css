@@ -621,7 +621,8 @@ h2 {
 }
 
 .interface-card {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -629,6 +630,47 @@ h2 {
   border: 1px solid #25354d;
   border-radius: 0.75rem;
   background: #0b1220;
+}
+
+.radio-configuration {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  margin: 0.65rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid #1e293b;
+}
+
+.radio-configuration > div {
+  min-width: 0;
+  padding: 0 0.65rem;
+  border-right: 1px solid #1e293b;
+}
+
+.radio-configuration > div:first-child {
+  padding-left: 0;
+}
+
+.radio-configuration > div:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.radio-configuration dt {
+  margin-bottom: 0.25rem;
+  color: #64748b;
+  font-size: 0.61rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.radio-configuration dd {
+  overflow-wrap: anywhere;
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 0.73rem;
+  font-weight: 650;
 }
 
 .interface-card > div {
@@ -1172,6 +1214,18 @@ h2 {
 
   .wifi-meta {
     flex-wrap: wrap;
+  }
+
+  .radio-configuration {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
+  .radio-configuration > div,
+  .radio-configuration > div:first-child,
+  .radio-configuration > div:last-child {
+    padding: 0;
+    border-right: 0;
   }
 
   .diagnostic-list {

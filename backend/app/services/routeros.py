@@ -206,6 +206,13 @@ def _read_wifi(client: Any) -> tuple[str | None, str, list[WiFiInterface]]:
                 mac_address=row.get("mac-address"),
                 disabled=_optional_bool(row.get("disabled")),
                 running=_optional_bool(row.get("running")),
+                mode=row.get("configuration.mode") or row.get("mode"),
+                ssid=row.get("configuration.ssid") or row.get("ssid"),
+                frequency=row.get("channel.frequency") or row.get("frequency"),
+                channel_width=(
+                    row.get("channel.width") or row.get("channel-width")
+                ),
+                band=row.get("channel.band") or row.get("band"),
             )
             for row in rows
         ]

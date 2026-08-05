@@ -37,6 +37,32 @@ function interfaceStatus(wifiInterface) {
   return "Estado não informado";
 }
 
+function radioModeLabel(mode) {
+  const labels = {
+    ap: "Ponto de acesso",
+    "ap-bridge": "Ponto de acesso",
+    bridge: "Ponto de acesso em bridge",
+    station: "Estação",
+    "station-bridge": "Estação de enlace",
+    "station-pseudobridge": "Estação pseudobridge",
+    "station-wds": "Estação WDS",
+  };
+
+  return labels[mode] || mode || "Não informado";
+}
+
+function formatFrequency(frequency) {
+  if (!frequency) {
+    return "Não informada";
+  }
+
+  return /^\d+$/.test(frequency) ? `${frequency} MHz` : frequency;
+}
+
+function formatChannelValue(value) {
+  return value ? value.replaceAll("mhz", " MHz") : "Não informada";
+}
+
 function peerName(peer) {
   return peer.radio_name || peer.ssid || peer.mac_address || "Peer sem identificação";
 }
@@ -152,6 +178,30 @@ function DeviceSummary({
               >
                 {interfaceStatus(wifiInterface)}
               </span>
+              <dl className="radio-configuration">
+                <div>
+                  <dt>Função</dt>
+                  <dd title={wifiInterface.mode || undefined}>
+                    {radioModeLabel(wifiInterface.mode)}
+                  </dd>
+                </div>
+                <div>
+                  <dt>SSID</dt>
+                  <dd>{wifiInterface.ssid || "Não informado"}</dd>
+                </div>
+                <div>
+                  <dt>Frequência configurada</dt>
+                  <dd>{formatFrequency(wifiInterface.frequency)}</dd>
+                </div>
+                <div>
+                  <dt>Largura configurada</dt>
+                  <dd>{formatChannelValue(wifiInterface.channel_width)}</dd>
+                </div>
+                <div>
+                  <dt>Banda</dt>
+                  <dd>{wifiInterface.band || "Não informada"}</dd>
+                </div>
+              </dl>
             </article>
           ))}
         </div>

@@ -21,6 +21,11 @@ class WiFiInterface(BaseModel):
     mac_address: str | None
     disabled: bool | None
     running: bool | None
+    mode: str | None
+    ssid: str | None
+    frequency: str | None
+    channel_width: str | None
+    band: str | None
 
 
 class EthernetInterface(BaseModel):
